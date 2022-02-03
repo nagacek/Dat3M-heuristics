@@ -127,7 +127,7 @@ public final class OptionInfo implements Comparable<OptionInfo> {
     }
 
     public String getName() {
-        return option.name();
+        return parent.prefix + (option.name().isEmpty() ? member.getName() : option.name());
     }
 
     public Class<?> getDomain() {
@@ -156,9 +156,8 @@ public final class OptionInfo implements Comparable<OptionInfo> {
 
     @Override
     public String toString() {
-    	return String.format("\n[-] %s%s : %s\n\t%s\n",
-            parent.prefix,
-            option.name().isEmpty() ? member.getName() : option.name(),
+        return String.format("\n[-] %s : %s\n\t%s\n",
+            getName(),
             domain.isEnum() ? 
             		"[" + String.join(", ", Arrays.stream(domain.getEnumConstants())
             				.map(o -> o instanceof OptionInterface ? 
