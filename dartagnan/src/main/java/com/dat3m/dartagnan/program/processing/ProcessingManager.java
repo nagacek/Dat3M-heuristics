@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
 
 import org.sosy_lab.common.configuration.Configuration;
@@ -35,7 +36,7 @@ public class ProcessingManager implements ProgramProcessor {
 	@Option(name= CONSTANT_PROPAGATION,
 			description="Performs constant propagation.",
 			secure=true)
-		private boolean constantPropagation = false;
+		private boolean constantPropagation = true;
 
     // ======================================================================
 
@@ -44,11 +45,14 @@ public class ProcessingManager implements ProgramProcessor {
 
         programProcessors.addAll(Arrays.asList(
                 atomicBlocksAsLocks ? AtomicAsLock.fromConfig(config) : null,
+                Memory.fixateMemoryValues(),
                 DeadCodeElimination.fromConfig(config),
                 BranchReordering.fromConfig(config),
                 Simplifier.fromConfig(config),
                 LoopUnrolling.fromConfig(config),
                 constantPropagation ? ConstantPropagation.fromConfig(config) : null,
+                DeadAssignmentElimination.fromConfig(config),
+                RemoveDeadCondJumps.fromConfig(config),
                 Compilation.fromConfig(config),
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null
         ));
