@@ -25,7 +25,8 @@ public class Reasoner {
 
     public Reasoner() {
     }
-
+    // TODO: Hier irgendwo müssen auch die high-level-reasons sein!!
+    // TODO: namely irgendwo bei compute reason
     // ========================== Reason computation ==========================
 
     public DNF<CAATLiteral> computeViolationReasons(Constraint constraint) {

@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.solver.caat.CAATSolver;
 import com.dat3m.dartagnan.solver.caat.reasoning.CAATLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreReasoner;
+import com.dat3m.dartagnan.solver.caat4wmm.statistics.GlobalStatistics;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -47,6 +48,7 @@ public class WMMSolver {
         long curTime = System.currentTimeMillis();
         executionModel.initialize(model, ctx);
         executionGraph.initializeFromModel(executionModel);
+        GlobalStatistics.initialize(executionGraph);
         long extractTime = System.currentTimeMillis() - curTime;
 
         // ============== Run the CAATSolver ==============
@@ -59,12 +61,15 @@ public class WMMSolver {
         if (result.getStatus() == CAATSolver.Status.INCONSISTENT) {
             // ============== Compute Core reasons ==============
             curTime = System.currentTimeMillis();
-            List<Conjunction<CoreLiteral>> coreReasons = new ArrayList<>(caatResult.getBaseReasons().getNumberOfCubes());
+            DNF<CAATLiteral> baseReasons = caatResult.getBaseReasons();
+            List<Conjunction<CoreLiteral>> coreReasons = new ArrayList<>(baseReasons.getNumberOfCubes());
             for (Conjunction<CAATLiteral> baseReason : caatResult.getBaseReasons().getCubes()) {
                 coreReasons.add(reasoner.toCoreReason(baseReason));
             }
             stats.numComputedCoreReasons = coreReasons.size();
             result.coreReasons = new DNF<>(coreReasons);
+            GlobalStatistics.insertCoreEdges(coreReasons);
+            GlobalStatistics.insertBaseEdges(baseReasons);
             stats.numComputedReducedCoreReasons = result.coreReasons.getNumberOfCubes();
             stats.coreReasonComputationTime = System.currentTimeMillis() - curTime;
         }
@@ -98,6 +103,7 @@ public class WMMSolver {
             return result;
         }
 
+
         @Override
         public String toString() {
             return status + "\n" +
@@ -125,6 +131,7 @@ public class WMMSolver {
         public int getNumComputedCoreReasons() { return numComputedCoreReasons; }
         public int getNumComputedReducedCoreReasons() { return numComputedReducedCoreReasons; }
 
+
         public String toString() {
             StringBuilder str = new StringBuilder();
             str.append("Model extraction time(ms): ").append(getModelExtractionTime()).append("\n");
@@ -139,6 +146,7 @@ public class WMMSolver {
                     .append("/").append(getNumComputedReducedCoreReasons()).append("\n");
             return str.toString();
         }
+
     }
 
 }
