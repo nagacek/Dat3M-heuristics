@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.solver.caat4wmm.statistics;
 
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
+import com.dat3m.dartagnan.solver.caat.predicates.sets.Element;
 import com.dat3m.dartagnan.solver.caat.reasoning.CAATLiteral;
 import com.dat3m.dartagnan.solver.caat.reasoning.EdgeLiteral;
 import com.dat3m.dartagnan.solver.caat.reasoning.ElementLiteral;
@@ -25,7 +26,8 @@ public class GlobalStatistics {
     private static ExecutionModel executionModel;
     private static HotMap<Tuple> hotCoreEdges;
     private static HotMap<Tuple> hotBaseEdges;
-    private static HotMap<Event> hotBaseElements ;
+    private static HotMap<Event> hotBaseElements;
+    private static Set<Conjunction<CAATLiteral>> currentBaseReasons;
     private static String baseReasons;
 
     private GlobalStatistics() {}
@@ -37,6 +39,7 @@ public class GlobalStatistics {
         hotCoreEdges = new HotMap<>();
         hotBaseEdges = new HotMap<>();
         hotBaseElements = new HotMap<>();
+        currentBaseReasons = new HashSet<>();
         baseReasons = "";
     }
 
@@ -44,6 +47,7 @@ public class GlobalStatistics {
         hotCoreEdges.update();
         hotBaseEdges.update();
         hotBaseElements.update();
+        currentBaseReasons = new HashSet<>();
         baseReasons = "";
     }
 
@@ -60,21 +64,24 @@ public class GlobalStatistics {
     }
 
     public static void insertBaseEdges(DNF<CAATLiteral> baseEdges) {
-        baseReasons = printBaseReasons(baseEdges);
         Set<Conjunction<CAATLiteral>> reasons = baseEdges.getCubes();
         for (Conjunction<CAATLiteral> reason : reasons) {
+            HashSet<CAATLiteral> globalIdSet = new HashSet<>();
             for (CAATLiteral lit : reason.getLiterals()) {
                 if (lit instanceof ElementLiteral) {
                     Event event = caatIdToEvent(((ElementLiteral) lit).getElement().getId());
                     hotBaseElements.insertAndCount(lit.getName(), event);
+                    globalIdSet.add(new ElementLiteral(lit.getName(), new Element(event.getCId()), lit.isNegative()));
                 } else {
                     Edge edge = ((EdgeLiteral)lit).getEdge();
                     Event e1 = caatIdToEvent(edge.getFirst());
                     Event e2 = caatIdToEvent(edge.getSecond());
                     Tuple tuple = new Tuple(e1, e2);
                     hotBaseEdges.insertAndCount(lit.getName(), tuple);
+                    globalIdSet.add(new EdgeLiteral(lit.getName(), new Edge(e1.getCId(), e2.getCId()), lit.isNegative()));
                 }
             }
+            currentBaseReasons.add(new Conjunction<>(globalIdSet));
         }
     }
 
@@ -83,8 +90,12 @@ public class GlobalStatistics {
         return eventData.getEvent();
     }
 
-    public static String printBaseReasons(DNF<CAATLiteral> baseEdges) {
-        return baseEdges.toString(); // TODO: auf cID umbauen
+    public static String printBaseReasons() {
+        StringBuilder str = new StringBuilder();
+        for (Conjunction<CAATLiteral> reason : currentBaseReasons) {
+            str.append("\n").append(reason);
+        }
+        return str.toString();
     }
 
     public static String print() {
@@ -92,7 +103,7 @@ public class GlobalStatistics {
         Function<Event, String> eventToString = e -> Integer.toString(e.getCId());
         StringBuilder str = new StringBuilder();
         str.append("\n\nBase reasons:");
-        str.append(baseReasons);
+        str.append(printBaseReasons());
         str.append("\n\nHot core edges:");
         str.append(hotCoreEdges.toString(tupleToString));
         str.append("\n\nHot base edges:");
