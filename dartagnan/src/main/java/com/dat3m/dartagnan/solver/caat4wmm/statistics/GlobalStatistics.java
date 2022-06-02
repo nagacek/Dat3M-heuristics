@@ -27,8 +27,11 @@ public class GlobalStatistics {
     private static HotMap<Tuple> hotCoreEdges;
     private static HotMap<Tuple> hotBaseEdges;
     private static HotMap<Event> hotBaseElements;
+    private static HotMap<Tuple> hotIntermediateEdges;
+    private static HotMap<Event> hotIntermediateElements;
+    private static HashSet<HotTree> intermediateTrees;
+    private static HotTree currentTree;
     private static Set<Conjunction<CAATLiteral>> currentBaseReasons;
-    private static String baseReasons;
 
     private GlobalStatistics() {}
 
@@ -39,16 +42,24 @@ public class GlobalStatistics {
         hotCoreEdges = new HotMap<>();
         hotBaseEdges = new HotMap<>();
         hotBaseElements = new HotMap<>();
+        hotIntermediateEdges = new HotMap<>();
+        hotIntermediateElements = new HotMap<>();
+        intermediateTrees = new HashSet<>();
+        currentTree = null;
         currentBaseReasons = new HashSet<>();
-        baseReasons = "";
     }
 
     public static void newIteration() {
         hotCoreEdges.update();
         hotBaseEdges.update();
         hotBaseElements.update();
+        hotIntermediateEdges.update();
+        hotIntermediateElements.update();
+        for (HotTree tree : intermediateTrees) {
+            tree.update();
+        }
+        currentTree = null;
         currentBaseReasons = new HashSet<>();
-        baseReasons = "";
     }
 
     public static void insertCoreEdges(List<Conjunction<CoreLiteral>> edges) {
@@ -90,7 +101,7 @@ public class GlobalStatistics {
         return eventData.getEvent();
     }
 
-    public static String printBaseReasons() {
+    private static String printBaseReasons() {
         StringBuilder str = new StringBuilder();
         for (Conjunction<CAATLiteral> reason : currentBaseReasons) {
             str.append("\n").append(reason);
