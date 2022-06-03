@@ -28,6 +28,7 @@ public class WMMSolver {
     private final ExecutionModel executionModel;
     private final CAATSolver solver;
     private final CoreReasoner reasoner;
+    private boolean initGlobalStats;
 
     public WMMSolver(VerificationTask task, Set<Relation> cutRelations) {
         task.getAnalysisContext().requires(RelationAnalysis.class);
@@ -50,7 +51,10 @@ public class WMMSolver {
         long curTime = System.currentTimeMillis();
         executionModel.initialize(model, ctx);
         executionGraph.initializeFromModel(executionModel);
-        GlobalStatistics.initialize(executionGraph);
+        if (GlobalStatistics.globalStats && initGlobalStats) {
+            GlobalStatistics.initialize(executionGraph);
+            initGlobalStats = false;
+        }
         long extractTime = System.currentTimeMillis() - curTime;
 
         // ============== Run the CAATSolver ==============
@@ -70,13 +74,19 @@ public class WMMSolver {
             }
             stats.numComputedCoreReasons = coreReasons.size();
             result.coreReasons = new DNF<>(coreReasons);
-            GlobalStatistics.insertCoreEdges(coreReasons);
-            GlobalStatistics.insertBaseEdges(baseReasons);
+            if (GlobalStatistics.globalStats) {
+                GlobalStatistics.insertCoreEdges(coreReasons);
+                GlobalStatistics.insertBaseEdges(baseReasons);
+            }
             stats.numComputedReducedCoreReasons = result.coreReasons.getNumberOfCubes();
             stats.coreReasonComputationTime = System.currentTimeMillis() - curTime;
         }
 
         return result;
+    }
+
+    public void initializeGlobalStats() {
+        initGlobalStats = true;
     }
 
 

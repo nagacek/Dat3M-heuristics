@@ -105,6 +105,7 @@ public class RefinementSolver {
         long curTime;
         long totalNativeSolvingTime = 0;
         long totalCaatTime = 0;
+        solver.initializeGlobalStats();
         //  ---------------------------------
 
         logger.info("Refinement procedure started.");
@@ -156,10 +157,12 @@ public class RefinementSolver {
                     logger.trace(message);
 
                     // Statistics in global environment
-                    message = new StringBuilder().append("Hot edges in global view:");
-                    message.append(GlobalStatistics.print());
-                    GlobalStatistics.newIteration();
-                    logger.trace(message);
+                    if (GlobalStatistics.globalStats) {
+                        message = new StringBuilder().append("Hot edges in global view:");
+                        message.append(GlobalStatistics.print());
+                        GlobalStatistics.newIteration();
+                        logger.trace(message);
+                    }
                 }
             } else {
                 // No violations found, we can't refine

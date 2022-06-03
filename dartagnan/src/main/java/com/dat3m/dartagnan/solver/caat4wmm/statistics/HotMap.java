@@ -14,6 +14,8 @@ import java.util.function.Function;
 public class HotMap <T>{
     private HashMap<String, HashMap<T, UpdatableValue<Integer>>> map;
 
+    private static final int MAX_HOTNESS = 20;
+
     public HotMap() {
         map = new HashMap<>();
     }
@@ -54,10 +56,10 @@ public class HotMap <T>{
             }
         }
         sorted.sort((obj1, obj2) -> obj2.getValue().getValue().current().compareTo(obj1.getValue().getValue().current()));
-        for (var entry : sorted) {
-            String name = entry.getKey();
-            T argument = entry.getValue().getKey();
-            UpdatableValue<Integer> occurrences = entry.getValue().getValue();
+        for (int i = 0; i < Math.min(MAX_HOTNESS, sorted.size() - 1); i++) {
+            String name = sorted.get(i).getKey();
+            T argument = sorted.get(i).getValue().getKey();
+            UpdatableValue<Integer> occurrences = sorted.get(i).getValue().getValue();
             str.append("\n").append(name).append("(").append(func.apply(argument)).append(")").append(": ")
                     .append(occurrences.current()).append(" (+").append(occurrences.current() - occurrences.was()).append(")");
         }
