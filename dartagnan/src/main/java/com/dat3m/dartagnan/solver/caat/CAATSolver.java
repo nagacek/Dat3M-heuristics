@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.solver.caat.constraints.Constraint;
 import com.dat3m.dartagnan.solver.caat.misc.PathAlgorithm;
 import com.dat3m.dartagnan.solver.caat.reasoning.CAATLiteral;
 import com.dat3m.dartagnan.solver.caat.reasoning.Reasoner;
+import com.dat3m.dartagnan.solver.caat4wmm.statistics.IntermediateStatistics;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 
@@ -30,8 +31,16 @@ public class CAATSolver {
         this.reasoner = new Reasoner();
     }
 
+    private CAATSolver(IntermediateStatistics intermediateStats) {
+        this.reasoner = new Reasoner(intermediateStats);
+    }
+
     public static CAATSolver create() {
         return new CAATSolver();
+    }
+
+    public static CAATSolver create(IntermediateStatistics intermediateStats) {
+        return new CAATSolver(intermediateStats);
     }
 
     // ======================================== Accessors ==============================================

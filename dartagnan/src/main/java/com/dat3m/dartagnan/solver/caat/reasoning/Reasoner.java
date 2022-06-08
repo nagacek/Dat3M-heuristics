@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.solver.caat.predicates.sets.Element;
 import com.dat3m.dartagnan.solver.caat.predicates.sets.SetPredicate;
 import com.dat3m.dartagnan.solver.caat4wmm.statistics.GlobalStatistics;
+import com.dat3m.dartagnan.solver.caat4wmm.statistics.IntermediateStatistics;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 
@@ -23,8 +24,13 @@ public class Reasoner {
 
     private final GraphVisitor graphVisitor = new GraphVisitor();
     private final SetVisitor setVisitor = new SetVisitor();
+    private final IntermediateStatistics intermediateStats;
 
+    public Reasoner(IntermediateStatistics intermediateStats) {
+        this.intermediateStats = intermediateStats;
+    }
     public Reasoner() {
+        this.intermediateStats = null;
     }
     // ========================== Reason computation ==========================
 
@@ -46,19 +52,22 @@ public class Reasoner {
             final Map<Edge, Conjunction<CAATLiteral>> reasonMap = new HashMap<>(mapSize);
 
             for (Collection<Edge> violation : (Collection<Collection<Edge>>)violations) {
-                if (GlobalStatistics.globalStats)
+                if (GlobalStatistics.globalStats) {
                     GlobalStatistics.newPredicate();
+                    intermediateStats.addMemoizedReasons(violation);
+                }
                 Conjunction<CAATLiteral> reason = violation.stream()
-                        .map(edge -> reasonMap.computeIfAbsent(edge, key -> computeReason(constrainedGraph, key)))
+                        .map(edge -> reasonMap.computeIfAbsent(edge, key -> computeReason(constrainedGraph, key, key)))
                         .reduce(Conjunction.TRUE(), Conjunction::and);
                 reasonList.add(reason);
             }
         } else {
             for (Collection<? extends Derivable> violation : violations) {
-                if (GlobalStatistics.globalStats)
+                if (GlobalStatistics.globalStats) {
                     GlobalStatistics.newPredicate();
+                }
                 Conjunction<CAATLiteral> reason = violation.stream()
-                        .map(edge -> computeReason(pred, edge))
+                        .map(edge -> computeReason(pred, edge, null))
                         .reduce(Conjunction.TRUE(), Conjunction::and);
                 reasonList.add(reason);
             }
@@ -67,28 +76,29 @@ public class Reasoner {
         return new DNF<>(reasonList);
     }
 
-    public Conjunction<CAATLiteral> computeReason(CAATPredicate pred, Derivable prop) {
+    public Conjunction<CAATLiteral> computeReason(CAATPredicate pred, Derivable prop, Derivable cameFrom) {
         if (pred instanceof RelationGraph && prop instanceof Edge) {
-            return computeReason((RelationGraph) pred, (Edge) prop);
+            return computeReason((RelationGraph) pred, (Edge) prop, cameFrom);
         } else if (pred instanceof SetPredicate && prop instanceof Element) {
-            return computeReason((SetPredicate) pred, (Element) prop);
+            return computeReason((SetPredicate) pred, (Element) prop, cameFrom);
         } else {
             return Conjunction.FALSE();
         }
     }
 
 
-    public Conjunction<CAATLiteral> computeReason(RelationGraph graph, Edge edge) {
+    public Conjunction<CAATLiteral> computeReason(RelationGraph graph, Edge edge, Derivable cameFrom) {
         if (!graph.contains(edge)) {
             return Conjunction.FALSE();
         }
 
         if (GlobalStatistics.globalStats) {
-            GlobalStatistics.insertIntermediate(graph.getName(), edge);
+            //GlobalStatistics.insertIntermediate(graph.getName(), edge);
             GlobalStatistics.go(graph.getName());
+            intermediateStats.insert(graph.getName(), edge, cameFrom);
         }
 
-        Conjunction<CAATLiteral> reason = graph.accept(graphVisitor, edge, null);
+        Conjunction<CAATLiteral> reason = graph.accept(graphVisitor, edge, cameFrom);
         assert !reason.isFalse();
 
         if (GlobalStatistics.globalStats)
@@ -97,17 +107,18 @@ public class Reasoner {
         return reason;
     }
 
-    public Conjunction<CAATLiteral> computeReason(SetPredicate set, Element ele) {
+    public Conjunction<CAATLiteral> computeReason(SetPredicate set, Element ele, Derivable cameFrom) {
         if (!set.contains(ele)) {
             return Conjunction.FALSE();
         }
 
         if (GlobalStatistics.globalStats) {
-            GlobalStatistics.insertIntermediate(set.getName(), ele);
+            //GlobalStatistics.insertIntermediate(set.getName(), ele);
             GlobalStatistics.go(set.getName());
+            intermediateStats.insert(set.getName(), ele, cameFrom);
         }
 
-        Conjunction<CAATLiteral> reason = set.accept(setVisitor, ele, null);
+        Conjunction<CAATLiteral> reason = set.accept(setVisitor, ele, cameFrom);
         assert !reason.isFalse();
 
         if (GlobalStatistics.globalStats)
@@ -122,15 +133,15 @@ public class Reasoner {
         and compute reasons for each predicate
      */
 
-    private class GraphVisitor implements PredicateVisitor<Conjunction<CAATLiteral>, Edge, Void> {
+    private class GraphVisitor implements PredicateVisitor<Conjunction<CAATLiteral>, Edge, Derivable> {
 
         @Override
-        public Conjunction<CAATLiteral> visit(CAATPredicate predicate, Edge edge, Void unused) {
+        public Conjunction<CAATLiteral> visit(CAATPredicate predicate, Edge edge, Derivable cameFrom) {
             throw new IllegalArgumentException(predicate.getName() + " is not supported in reasoning computation");
         }
 
         @Override
-        public Conjunction<CAATLiteral> visitGraphUnion(RelationGraph graph, Edge edge, Void unused) {
+        public Conjunction<CAATLiteral> visitGraphUnion(RelationGraph graph, Edge edge, Derivable cameFrom) {
             if (GlobalStatistics.globalStats)
                 GlobalStatistics.operator("UNION");
 
@@ -146,28 +157,28 @@ public class Reasoner {
             }
 
             assert next != graph;
-            Conjunction<CAATLiteral> reason = computeReason(next, min);
+            Conjunction<CAATLiteral> reason = computeReason(next, min, cameFrom);
             assert !reason.isFalse();
             return reason;
 
         }
 
         @Override
-        public Conjunction<CAATLiteral> visitGraphIntersection(RelationGraph graph, Edge edge, Void unused) {
+        public Conjunction<CAATLiteral> visitGraphIntersection(RelationGraph graph, Edge edge, Derivable cameFrom) {
             if (GlobalStatistics.globalStats)
                 GlobalStatistics.operator("INTERSECT");
 
             Conjunction<CAATLiteral> reason = Conjunction.TRUE();
             for (RelationGraph g : (List<RelationGraph>) graph.getDependencies()) {
                 Edge e = g.get(edge);
-                reason = reason.and(computeReason(g, e));
+                reason = reason.and(computeReason(g, e, cameFrom));
             }
             assert !reason.isFalse();
             return reason;
         }
 
         @Override
-        public Conjunction<CAATLiteral> visitGraphComposition(RelationGraph graph, Edge edge, Void unused) {
+        public Conjunction<CAATLiteral> visitGraphComposition(RelationGraph graph, Edge edge, Derivable cameFrom) {
             if (GlobalStatistics.globalStats)
                 GlobalStatistics.operator("CONJUNCTION");
 
@@ -183,7 +194,7 @@ public class Reasoner {
                     }
                     Edge e2 = second.get(new Edge(e1.getSecond(), edge.getSecond()));
                     if (e2 != null && e2.getDerivationLength() < edge.getDerivationLength()) {
-                        Conjunction<CAATLiteral> reason = computeReason(first, e1).and(computeReason(second, e2));
+                        Conjunction<CAATLiteral> reason = computeReason(first, e1, cameFrom).and(computeReason(second, e2, cameFrom));
                         assert !reason.isFalse();
                         return reason;
                     }
@@ -195,7 +206,7 @@ public class Reasoner {
                     }
                     Edge e1 = first.get(new Edge(edge.getFirst(), e2.getFirst()));
                     if (e1 != null && e1.getDerivationLength() < edge.getDerivationLength()) {
-                        Conjunction<CAATLiteral> reason = computeReason(first, e1).and(computeReason(second, e2));
+                        Conjunction<CAATLiteral> reason = computeReason(first, e1, cameFrom).and(computeReason(second, e2, cameFrom));
                         assert !reason.isFalse();
                         return reason;
                     }
@@ -206,21 +217,21 @@ public class Reasoner {
         }
 
         @Override
-        public Conjunction<CAATLiteral> visitCartesian(RelationGraph graph, Edge edge, Void unused) {
+        public Conjunction<CAATLiteral> visitCartesian(RelationGraph graph, Edge edge, Derivable cameFrom) {
             if (GlobalStatistics.globalStats)
                 GlobalStatistics.operator("CARTESIAN");
 
             SetPredicate lhs = (SetPredicate) graph.getDependencies().get(0);
             SetPredicate rhs = (SetPredicate) graph.getDependencies().get(1);
 
-            Conjunction<CAATLiteral> reason = computeReason(lhs, lhs.getById(edge.getFirst()))
-                    .and(computeReason(rhs, rhs.getById(edge.getSecond())));
+            Conjunction<CAATLiteral> reason = computeReason(lhs, lhs.getById(edge.getFirst()), cameFrom)
+                    .and(computeReason(rhs, rhs.getById(edge.getSecond()), cameFrom));
             assert !reason.isFalse();
             return reason;
         }
 
         @Override
-        public Conjunction<CAATLiteral> visitGraphDifference(RelationGraph graph, Edge edge, Void unused) {
+        public Conjunction<CAATLiteral> visitGraphDifference(RelationGraph graph, Edge edge, Derivable cameFrom) {
             RelationGraph lhs = (RelationGraph) graph.getDependencies().get(0);
             RelationGraph rhs = (RelationGraph) graph.getDependencies().get(1);
 
@@ -230,25 +241,25 @@ public class Reasoner {
                                 "is derived.", edge, graph, rhs));
             }
 
-            Conjunction<CAATLiteral> reason = computeReason(lhs, edge)
+            Conjunction<CAATLiteral> reason = computeReason(lhs, edge, cameFrom)
                     .and(new EdgeLiteral(rhs.getName(), edge, true).toSingletonReason());
             assert !reason.isFalse();
             return reason;
         }
 
         @Override
-        public Conjunction<CAATLiteral> visitInverse(RelationGraph graph, Edge edge, Void unused) {
+        public Conjunction<CAATLiteral> visitInverse(RelationGraph graph, Edge edge, Derivable cameFrom) {
             if (GlobalStatistics.globalStats)
                 GlobalStatistics.operator("INVERSE");
 
             Conjunction<CAATLiteral> reason = computeReason((RelationGraph) graph.getDependencies().get(0),
-                    edge.inverse().withDerivationLength(edge.getDerivationLength() - 1));
+                    edge.inverse().withDerivationLength(edge.getDerivationLength() - 1), cameFrom);
             assert !reason.isFalse();
             return reason;
         }
 
         @Override
-        public Conjunction<CAATLiteral> visitSetIdentity(RelationGraph graph, Edge edge, Void unused) {
+        public Conjunction<CAATLiteral> visitSetIdentity(RelationGraph graph, Edge edge, Derivable cameFrom) {
             assert edge.isLoop();
 
             if (GlobalStatistics.globalStats)
@@ -256,11 +267,11 @@ public class Reasoner {
 
             SetPredicate inner = (SetPredicate) graph.getDependencies().get(0);
             Element e = inner.getById(edge.getFirst());
-            return computeReason(inner, e);
+            return computeReason(inner, e, cameFrom);
         }
 
         @Override
-        public Conjunction<CAATLiteral> visitRangeIdentity(RelationGraph graph, Edge edge, Void unused) {
+        public Conjunction<CAATLiteral> visitRangeIdentity(RelationGraph graph, Edge edge, Derivable cameFrom) {
             assert edge.isLoop();
 
             if (GlobalStatistics.globalStats)
@@ -270,7 +281,7 @@ public class Reasoner {
             for (Edge inEdge : inner.inEdges(edge.getSecond())) {
                 // We use the first edge we find
                 if (inEdge.getDerivationLength() < edge.getDerivationLength()) {
-                    Conjunction<CAATLiteral> reason = computeReason(inner, inEdge);
+                    Conjunction<CAATLiteral> reason = computeReason(inner, inEdge, cameFrom);
                     assert !reason.isFalse();
                     return reason;
                 }
@@ -279,21 +290,21 @@ public class Reasoner {
         }
 
         @Override
-        public Conjunction<CAATLiteral> visitReflexiveClosure(RelationGraph graph, Edge edge, Void unused) {
+        public Conjunction<CAATLiteral> visitReflexiveClosure(RelationGraph graph, Edge edge, Derivable cameFrom) {
             if (GlobalStatistics.globalStats)
                 GlobalStatistics.operator("REFLEXIVE CLOSURE");
 
             if (edge.isLoop()) {
                 return Conjunction.TRUE();
             } else {
-                Conjunction<CAATLiteral> reason = computeReason((RelationGraph) graph.getDependencies().get(0), edge);
+                Conjunction<CAATLiteral> reason = computeReason((RelationGraph) graph.getDependencies().get(0), edge, cameFrom);
                 assert !reason.isFalse();
                 return reason;
             }
         }
 
         @Override
-        public Conjunction<CAATLiteral> visitTransitiveClosure(RelationGraph graph, Edge edge, Void unused) {
+        public Conjunction<CAATLiteral> visitTransitiveClosure(RelationGraph graph, Edge edge, Derivable cameFrom) {
             if (GlobalStatistics.globalStats)
                 GlobalStatistics.operator("TRANSITIVE CLOSURE");
 
@@ -301,34 +312,34 @@ public class Reasoner {
             Conjunction<CAATLiteral> reason = Conjunction.TRUE();
             List<Edge> path = findShortestPath(inner, edge.getFirst(), edge.getSecond(), edge.getDerivationLength() - 1);
             for (Edge e : path) {
-                reason = reason.and(computeReason(inner, e));
+                reason = reason.and(computeReason(inner, e, cameFrom));
             }
             assert !reason.isFalse();
             return reason;
         }
 
         @Override
-        public Conjunction<CAATLiteral> visitRecursiveGraph(RelationGraph graph, Edge edge, Void unused) {
+        public Conjunction<CAATLiteral> visitRecursiveGraph(RelationGraph graph, Edge edge, Derivable cameFrom) {
             if (GlobalStatistics.globalStats)
                 GlobalStatistics.operator("RECURSIVE");
 
-            Conjunction<CAATLiteral> reason = computeReason((RelationGraph) graph.getDependencies().get(0), edge);
+            Conjunction<CAATLiteral> reason = computeReason((RelationGraph) graph.getDependencies().get(0), edge, cameFrom);
             assert !reason.isFalse();
             return reason;
         }
 
         @Override
-        public Conjunction<CAATLiteral> visitBaseGraph(RelationGraph graph, Edge edge, Void unused) {
+        public Conjunction<CAATLiteral> visitBaseGraph(RelationGraph graph, Edge edge, Derivable cameFrom) {
             return new EdgeLiteral(graph.getName(), edge, false).toSingletonReason();
         }
     }
 
-    private class SetVisitor implements PredicateVisitor<Conjunction<CAATLiteral>, Element, Void> {
+    private class SetVisitor implements PredicateVisitor<Conjunction<CAATLiteral>, Element, Derivable> {
 
         // ============================ Sets =========================
 
         @Override
-        public Conjunction<CAATLiteral> visitSetUnion(SetPredicate set, Element ele, Void unused) {
+        public Conjunction<CAATLiteral> visitSetUnion(SetPredicate set, Element ele, Derivable cameFrom) {
             if (GlobalStatistics.globalStats)
                 GlobalStatistics.operator("UNION");
 
@@ -345,27 +356,27 @@ public class Reasoner {
 
             assert next != set;
 
-            Conjunction<CAATLiteral> reason = computeReason(next, min);
+            Conjunction<CAATLiteral> reason = computeReason(next, min, cameFrom);
             assert !reason.isFalse();
             return reason;
         }
 
         @Override
-        public Conjunction<CAATLiteral> visitSetIntersection(SetPredicate set, Element ele, Void unused) {
+        public Conjunction<CAATLiteral> visitSetIntersection(SetPredicate set, Element ele, Derivable cameFrom) {
             if (GlobalStatistics.globalStats)
                 GlobalStatistics.operator("INTERSECT");
 
             Conjunction<CAATLiteral> reason = Conjunction.TRUE();
             for (SetPredicate s : set.getDependencies()) {
                 Element e = set.get(ele);
-                reason = reason.and(computeReason(s, e));
+                reason = reason.and(computeReason(s, e, cameFrom));
             }
             assert !reason.isFalse();
             return reason;
         }
 
         @Override
-        public Conjunction<CAATLiteral> visitSetDifference(SetPredicate set, Element ele, Void unused) {
+        public Conjunction<CAATLiteral> visitSetDifference(SetPredicate set, Element ele, Derivable cameFrom) {
             if (GlobalStatistics.globalStats)
                 GlobalStatistics.operator("DIFFERENCE");
 
@@ -377,14 +388,14 @@ public class Reasoner {
                         "set difference %s because its right-hand side %s is derived.", ele, set, rhs));
             }
 
-            Conjunction<CAATLiteral> reason = computeReason(lhs, ele)
+            Conjunction<CAATLiteral> reason = computeReason(lhs, ele, cameFrom)
                     .and(new ElementLiteral(rhs.getName(), ele, true).toSingletonReason());
             assert !reason.isFalse();
             return reason;
         }
 
         @Override
-        public Conjunction<CAATLiteral> visitBaseSet(SetPredicate set, Element ele, Void unused) {
+        public Conjunction<CAATLiteral> visitBaseSet(SetPredicate set, Element ele, Derivable cameFrom) {
             return new ElementLiteral(set.getName(), ele, false).toSingletonReason();
         }
     }

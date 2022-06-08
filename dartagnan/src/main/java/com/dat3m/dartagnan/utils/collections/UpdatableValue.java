@@ -9,6 +9,11 @@ public class UpdatableValue<T> {
         was = init;
     }
 
+    public UpdatableValue(T init, T current) {
+        this.current = current;
+        was = init;
+    }
+
     public T current() {
         return current;
     }

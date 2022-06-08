@@ -25,17 +25,21 @@ import java.util.function.Function;
 public class GlobalStatistics {
 
     public static final boolean globalStats = true;
+    public static final boolean showTree = false;
+    public static final boolean showNotMemoized = true;
+    public static final boolean showMemoized = true;
+    public static final int MAX_HOTNESS = 30;
     private static ExecutionGraph executionGraph;
     private static EventDomain domain;
     private static ExecutionModel executionModel;
     private static HotMap<Tuple> hotCoreEdges;
     //private static HotMap<Tuple> hotBaseEdges;
     //private static HotMap<Event> hotBaseElements;
-    private static HotMap<Tuple> hotIntermediateEdges;
-    private static HotMap<Event> hotIntermediateElements;
+    //private static HotMap<Tuple> hotIntermediateEdges;
+    //private static HotMap<Event> hotIntermediateElements;
     private static HashSet<HotTree> intermediateTrees;
     private static HotTree currentTree;
-    private static HashMap<String, UpdatableValue<Integer>> predicateSummary;
+    //private static HashMap<String, UpdatableValue<Integer>> predicateSummary;
     private static Set<Conjunction<CAATLiteral>> currentBaseReasons;
 
     private GlobalStatistics() {}
@@ -47,11 +51,11 @@ public class GlobalStatistics {
         hotCoreEdges = new HotMap<>();
         //hotBaseEdges = new HotMap<>();
         //hotBaseElements = new HotMap<>();
-        hotIntermediateEdges = new HotMap<>();
-        hotIntermediateElements = new HotMap<>();
+        //hotIntermediateEdges = new HotMap<>();
+        //hotIntermediateElements = new HotMap<>();
         intermediateTrees = new HashSet<>();
         currentTree = null;
-        predicateSummary = new HashMap<>();
+        //predicateSummary = new HashMap<>();
         currentBaseReasons = new HashSet<>();
     }
 
@@ -59,15 +63,15 @@ public class GlobalStatistics {
         hotCoreEdges.update();
         //hotBaseEdges.update();
         //hotBaseElements.update();
-        hotIntermediateEdges.update();
-        hotIntermediateElements.update();
+        //hotIntermediateEdges.update();
+        //hotIntermediateElements.update();
         for (HotTree tree : intermediateTrees) {
             tree.update();
         }
         currentTree = null;
-        for (UpdatableValue<Integer> value : predicateSummary.values()) {
-            value.update();
-        }
+        //for (UpdatableValue<Integer> value : predicateSummary.values()) {
+        //    value.update();
+        //}
         currentBaseReasons = new HashSet<>();
     }
 
@@ -109,7 +113,7 @@ public class GlobalStatistics {
         }
     }
 
-    public static void insertIntermediate(String name, Derivable derivable) {
+    /*public static void insertIntermediate(String name, Derivable derivable) {
         countSummary(name);
         if (derivable instanceof Edge) {
             Event e1 = caatIdToEvent(((Edge)derivable).getFirst());
@@ -119,7 +123,7 @@ public class GlobalStatistics {
             Event e = caatIdToEvent(((Element) derivable).getId());
             hotIntermediateElements.insertAndCount(name, e);
         }
-    }
+    }*/
 
     public static void go(String name) {
         if (currentTree == null) {
@@ -172,23 +176,23 @@ public class GlobalStatistics {
         return intermediateTrees;
     }
 
-    private static void countSummary(String name) {
+    /*private static void countSummary(String name) {
         if (!predicateSummary.containsKey(name)) {
             predicateSummary.put(name, new UpdatableValue<>(0));
         } else {
             UpdatableValue<Integer> current = predicateSummary.get(name);
             current.setCurrent(current.current() + 1);
         }
-    }
+    }*/
 
-    private static List<Map.Entry<String, UpdatableValue<Integer>>> sortSummary() {
+    /*private static List<Map.Entry<String, UpdatableValue<Integer>>> sortSummary() {
         ArrayList<Map.Entry<String, UpdatableValue<Integer>>> sorted = new ArrayList<>();
         for (var entry : predicateSummary.entrySet()) {
             sorted.add(entry);
         }
         sorted.sort((obj1, obj2) -> obj2.getValue().current().compareTo(obj1.getValue().current()));
         return sorted;
-    }
+    }*/
 
     private static Event caatIdToEvent(int caatId) {
         EventData eventData = domain.getObjectById(caatId);
@@ -209,27 +213,32 @@ public class GlobalStatistics {
         StringBuilder str = new StringBuilder();
         str.append("\n\nBase reasons:");
         str.append(printBaseReasons());
-        str.append("\n\nHot derivation tree:");
-        for (HotTree tree : intermediateTrees) {
-            str.append("\n").append(tree);
-        }
         str.append("\n\nHot core edges:");
         str.append(hotCoreEdges.toString(tupleToString));
-        str.append("\n\nHot intermediate edges:");
-        str.append(hotIntermediateEdges.toString(tupleToString));
-        str.append("\n\nHot intermediate unary predicates:");
-        str.append(hotIntermediateElements.toString(eventToString));
-        str.append("\n\nSummary hot predicates:");
-        for (var entry : sortSummary()) {
-            UpdatableValue<Integer> value = entry.getValue();
-            str.append("\n").append(entry.getKey()).append(": ").append(value.current())
-                    .append(" (+").append(value.current() - value.was()).append(")");
+        if (showTree || showNotMemoized) {
+            str.append("\n\n\n ---------- Newly computed ---------- \n");
         }
+        if (showTree) {
+            str.append("\n\nHot derivation tree:");
+            for (HotTree tree : intermediateTrees) {
+                str.append("\n").append(tree);
+            }
+        }
+        //str.append("\n\nHot intermediate edges:");
+        //str.append(hotIntermediateEdges.toString(tupleToString));
+        //str.append("\n\nHot intermediate unary predicates:");
+        //str.append(hotIntermediateElements.toString(eventToString));
+        //str.append("\n\nSummary hot predicates:");
+        //for (var entry : sortSummary()) {
+        //    UpdatableValue<Integer> value = entry.getValue();
+        //    str.append("\n").append(entry.getKey()).append(": ").append(value.current())
+        //            .append(" (+").append(value.current() - value.was()).append(")");
+        //}
         //str.append("\n\nHot base edges:");
         //str.append(hotBaseEdges.toString(tupleToString));
         //str.append("\n\nHot unary base predicates:");
         //str.append(hotBaseElements.toString(eventToString));
-        str.append("\n");
+        //str.append("\n");
         return str.toString();
     }
 }

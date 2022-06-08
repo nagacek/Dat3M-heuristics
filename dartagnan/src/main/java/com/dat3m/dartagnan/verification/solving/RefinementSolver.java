@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
 import com.dat3m.dartagnan.solver.caat4wmm.WMMSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.RelLiteral;
+import com.dat3m.dartagnan.solver.caat4wmm.statistics.IntermediateStatistics;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
@@ -78,8 +79,10 @@ public class RefinementSolver {
         WmmEncoder baselineEncoder = task.getBaselineWmmEncoder();
         SymmetryEncoder symmEncoder = task.getSymmetryEncoder();
 
+        IntermediateStatistics intermediateStatistics = new IntermediateStatistics();
+
         Program program = task.getProgram();
-        WMMSolver solver = new WMMSolver(task, cutRelations);
+        WMMSolver solver = new WMMSolver(task, cutRelations, intermediateStatistics);
         Refiner refiner = new Refiner(task);
         CAATSolver.Status status = INCONSISTENT;
 
@@ -160,7 +163,9 @@ public class RefinementSolver {
                     if (GlobalStatistics.globalStats) {
                         message = new StringBuilder().append("Hot edges in global view:");
                         message.append(GlobalStatistics.print());
+                        message.append(intermediateStatistics);
                         GlobalStatistics.newIteration();
+                        intermediateStatistics.update();
                         logger.trace(message);
                     }
                 }

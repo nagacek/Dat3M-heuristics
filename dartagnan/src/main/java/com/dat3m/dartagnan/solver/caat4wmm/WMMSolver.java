@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.solver.caat.reasoning.CAATLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreReasoner;
 import com.dat3m.dartagnan.solver.caat4wmm.statistics.GlobalStatistics;
+import com.dat3m.dartagnan.solver.caat4wmm.statistics.IntermediateStatistics;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -28,6 +29,7 @@ public class WMMSolver {
     private final ExecutionModel executionModel;
     private final CAATSolver solver;
     private final CoreReasoner reasoner;
+    private final IntermediateStatistics intermediateStats;
     private boolean initGlobalStats;
 
     public WMMSolver(VerificationTask task, Set<Relation> cutRelations) {
@@ -36,6 +38,16 @@ public class WMMSolver {
         this.executionModel = new ExecutionModel(task);
         this.reasoner = new CoreReasoner(task, executionGraph);
         this.solver = CAATSolver.create();
+        this.intermediateStats = null;
+    }
+
+    public WMMSolver(VerificationTask task, Set<Relation> cutRelations, IntermediateStatistics stats) {
+        task.getAnalysisContext().requires(RelationAnalysis.class);
+        this.executionGraph = new ExecutionGraph(task, cutRelations, true);
+        this.executionModel = new ExecutionModel(task);
+        this.reasoner = new CoreReasoner(task, executionGraph);
+        this.solver = CAATSolver.create(stats);
+        this.intermediateStats = stats;
     }
 
     public ExecutionModel getExecution() {
@@ -51,6 +63,7 @@ public class WMMSolver {
         long curTime = System.currentTimeMillis();
         executionModel.initialize(model, ctx);
         executionGraph.initializeFromModel(executionModel);
+        intermediateStats.initializeFromExecutionGraph(executionGraph);
         if (GlobalStatistics.globalStats && initGlobalStats) {
             GlobalStatistics.initialize(executionGraph);
             initGlobalStats = false;
