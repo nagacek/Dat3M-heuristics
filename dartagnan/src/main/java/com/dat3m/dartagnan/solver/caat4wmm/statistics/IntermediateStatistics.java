@@ -15,11 +15,11 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 public class IntermediateStatistics {
-    private HotMap<List<Event>> edges;
-    private HotMap<List<Event>> edgesWOMemoized;
-    private HotMap<List<Event>> iterations;
-    private HotMap<List<Event>> iterationsWOMemoized;
-    private HashMap<Tuple, ArrayList<ReasonElement>> computedRelations;
+    private final HotMap<List<Event>> edges;
+    private final HotMap<List<Event>> edgesWOMemoized;
+    private final HotMap<List<Event>> iterations;
+    private final HotMap<List<Event>> iterationsWOMemoized;
+    private final HashMap<Tuple, ArrayList<ReasonElement>> computedRelations;
     private EventDomain domain;
     private int iterationCounter;
 
