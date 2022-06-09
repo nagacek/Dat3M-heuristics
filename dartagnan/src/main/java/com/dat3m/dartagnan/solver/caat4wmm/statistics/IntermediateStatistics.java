@@ -41,6 +41,7 @@ public class IntermediateStatistics {
         edgesWOMemoized.update();
         iterations.update();
         iterationsWOMemoized.update();
+        computedRelations.clear();
         iterationCounter++;
     }
 
@@ -63,7 +64,7 @@ public class IntermediateStatistics {
             if (e1 == null) {
                 return;
             }
-            List<Event> event = Arrays.asList(e1);
+            List<Event> event = Collections.singletonList(e1);
             edges.insertAndCount(name, event);
             edgesWOMemoized.insertAndCount(name, event);
             iterations.insertAndCount(name, event, true);
@@ -123,7 +124,7 @@ public class IntermediateStatistics {
         BiConsumer<HashMap<List<Event>, UpdatableValue<Float>>, Map.Entry<List<Event>, UpdatableValue<Float>>> splitList =
                 (map, entry) -> {
             for (Event event : entry.getKey()) {
-                List<Event> singleton = Arrays.asList(event);
+                List<Event> singleton = Collections.singletonList(event);
                 UpdatableValue<Float> currentValue = map.get(singleton);
                 if (currentValue == null) {
                     currentValue = new UpdatableValue<>(0f);
