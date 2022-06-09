@@ -142,10 +142,10 @@ public class IntermediateStatistics {
             str.append(edgesWOMemoized.toString(listString));
             str.append("\n\nHot events:");
             str.append(singletonListMapToString(edgesWOMemoized.summarizeT(splitList)));
+            str.append("\n\nHot predicates:");
+            str.append(stringMapToString(edgesWOMemoized.summarizeName()));
             str.append("\n\n\nHot intermediates by iteration:");
             str.append(iterationsWOMemoized.toString(listString));
-            str.append("\n\nHot events by iteration:");
-            str.append(singletonListMapToString(iterationsWOMemoized.summarizeT(splitList)));
             str.append("\n\nHot intermediates by #edges * #occ. iterations / #iterations:");
             str.append(edgesWOMemoized.per(iterationsWOMemoized, iterationCounter).toString(listString));
         }
@@ -155,9 +155,9 @@ public class IntermediateStatistics {
             str.append("\n\nHot intermediates:").append(edges.toString(listString));
             str.append("\n\nHot events:");
             str.append(singletonListMapToString(edges.summarizeT(splitList)));
+            str.append("\n\nHot predicates:");
+            str.append(stringMapToString(edges.summarizeName()));
             str.append("\n\nHot intermediates by iterations:").append(iterations.toString(listString));
-            str.append("\n\nHot events by iteration:");
-            str.append(singletonListMapToString(iterations.summarizeT(splitList)));
             str.append("\n\nHot intermediates by #edges * #occ. iterations / #iterations:");
             str.append(edges.per(iterations, iterationCounter).toString(listString));
         }
@@ -176,6 +176,20 @@ public class IntermediateStatistics {
             float was = sorted.get(i).getValue().was();
             str.append((int)current).append(" (+");
             str.append((int)(current - was)).append(")");
+        }
+        str.append("\n");
+        return str.toString();
+    }
+
+    private String stringMapToString(HashMap<String, UpdatableValue<Float>> map) {
+        StringBuilder str = new StringBuilder();
+        ArrayList<Map.Entry<String, UpdatableValue<Float>>> sorted = new ArrayList<>(map.entrySet());
+        sorted.sort((entry1, entry2) -> entry2.getValue().current().compareTo(entry1.getValue().current()));
+        for (int i = 0; i < Math.min(GlobalStatistics.MAX_HOTNESS, sorted.size()); i++) {
+            float current = sorted.get(i).getValue().current();
+            float difference = current - sorted.get(i).getValue().was();
+            str.append("\n").append(sorted.get(i).getKey()).append(": ");
+            str.append((int)current).append(" (+").append((int)difference).append(")");
         }
         str.append("\n");
         return str.toString();

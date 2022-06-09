@@ -94,6 +94,23 @@ public class HotMap <T>{
         return newMap;
     }
 
+    public HashMap<String, UpdatableValue<Float>> summarizeName() {
+        HashMap<String, UpdatableValue<Float>> newMap = new HashMap<>();
+        for (var key : map.keySet()) {
+            if (!newMap.containsKey(key)) {
+                newMap.put(key, new UpdatableValue<>(0f));
+            }
+            for (var value : map.get(key).values()) {
+                UpdatableValue<Float> oldValue = newMap.get(key);
+                float was = oldValue.was() + value.was();
+                float current = oldValue.current() + value.current();
+                UpdatableValue<Float> newValue = new UpdatableValue<>(was, current);
+                newMap.put(key, newValue);
+            }
+        }
+        return newMap;
+    }
+
     private void initMap(String initKey) {
         if (!map.containsKey(initKey)) {
             map.put(initKey, new HashMap<>());
