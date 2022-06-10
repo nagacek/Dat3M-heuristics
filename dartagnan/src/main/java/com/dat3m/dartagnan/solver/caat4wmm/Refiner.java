@@ -12,15 +12,16 @@ import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.RefinementTask;
+import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
+import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.dat3m.dartagnan.wmm.utils.Utils;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 
 import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_SYMMETRY_LEARNING;
@@ -62,6 +63,30 @@ public class Refiner {
                         .map(lit -> bmgr.not(permuteAndConvert(lit, perm, context)))
                         .reduce(bmgr.makeFalse(), bmgr::or);
                 refinement = bmgr.and(refinement, permutedClause);
+            }
+        }
+        return refinement;
+    }
+
+    public BooleanFormula refineAcyclicity(Axiom ax, Map<Tuple, Conjunction<CoreLiteral>> reasonMap, SolverContext context) {
+        BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
+        IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
+        BooleanFormula refinement = bmgr.makeTrue();
+        Relation rel = ax.getRelation();
+        // For each symmetry permutation, we will create refinement clauses
+        for (Function<Event, Event> perm : symmPermutations) {
+            for (Map.Entry<Tuple, Conjunction<CoreLiteral>> edgeReason : reasonMap.entrySet()) {
+                Event e1 = perm.apply(edgeReason.getKey().getFirst());
+                Event e2 = perm.apply(edgeReason.getKey().getSecond());
+
+                BooleanFormula permutedClause = edgeReason.getValue().getLiterals().stream()
+                        .map(lit -> permuteAndConvert(lit, perm, context))
+                        .reduce(bmgr.makeTrue(), bmgr::and);
+
+                refinement = bmgr.and(refinement,
+                        bmgr.implication(permutedClause,
+                                imgr.lessThan(Utils.intVar(rel.getName(), e1, context), Utils.intVar(rel.getName(), e2, context)
+                        )));
             }
         }
         return refinement;

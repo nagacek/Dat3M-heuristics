@@ -17,6 +17,7 @@ import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.axiom.ForceEncodeAxiom;
 import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
 import com.dat3m.dartagnan.wmm.relation.Relation;
@@ -28,11 +29,7 @@ import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.Model;
-import org.sosy_lab.java_smt.api.ProverEnvironment;
-import org.sosy_lab.java_smt.api.SolverContext;
-import org.sosy_lab.java_smt.api.SolverException;
+import org.sosy_lab.java_smt.api.*;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -141,6 +138,11 @@ public class RefinementSolver {
                 DNF<CoreLiteral> reasons = solverResult.getCoreReasons();
                 foundCoreReasons.add(reasons);
                 prover.addConstraint(refiner.refine(reasons, ctx));
+
+                // Test code
+                for (Axiom ax : solverResult.getCycleEdgeReasons().keySet()) {
+                    prover.addConstraint(refiner.refineAcyclicity(ax, solverResult.getCycleEdgeReasons().get(ax), ctx));
+                }
 
                 if (REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES) {
                     generateGraphvizFiles(task, solver.getExecution(), iterationCount, reasons);

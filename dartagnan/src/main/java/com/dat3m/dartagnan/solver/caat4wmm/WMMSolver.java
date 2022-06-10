@@ -2,6 +2,8 @@ package com.dat3m.dartagnan.solver.caat4wmm;
 
 
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
+import com.dat3m.dartagnan.solver.caat.constraints.Constraint;
+import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.solver.caat.reasoning.CAATLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreReasoner;
@@ -10,13 +12,13 @@ import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
+import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
+import com.dat3m.dartagnan.wmm.utils.Tuple;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /*
     This is our domain-specific bridging component that specializes the CAATSolver to the WMM setting.
@@ -65,6 +67,17 @@ public class WMMSolver {
             for (Conjunction<CAATLiteral> baseReason : caatResult.getBaseReasons().getCubes()) {
                 coreReasons.add(reasoner.toCoreReason(baseReason));
             }
+            // Test code
+            EventDomain dom = executionGraph.getDomain();
+            for (Constraint constr : caatResult.getCycleEdgeReasons().keySet()) {
+                Axiom ax = executionGraph.getAxiomConstraintMap().inverse().get(constr);
+                Map<Tuple, Conjunction<CoreLiteral>> reasonMap = result.cycleEdgeReasonsMap.computeIfAbsent(ax, key -> new HashMap<>());
+                for (Map.Entry<Edge, Conjunction<CAATLiteral>> edgeReason : caatResult.getCycleEdgeReasons().get(constr).entrySet()) {
+                    Edge e = edgeReason.getKey();
+                    Tuple t = new Tuple(dom.getObjectById(e.getFirst()).getEvent(), dom.getObjectById(e.getSecond()).getEvent());
+                    reasonMap.put(t, reasoner.toCoreReason(edgeReason.getValue()));
+                }
+            }
             stats.numComputedCoreReasons = coreReasons.size();
             result.coreReasons = new DNF<>(coreReasons);
             stats.numComputedReducedCoreReasons = result.coreReasons.getNumberOfCubes();
@@ -80,15 +93,18 @@ public class WMMSolver {
     public static class Result {
         private CAATSolver.Status status;
         private DNF<CoreLiteral> coreReasons;
+        private Map<Axiom, Map<Tuple, Conjunction<CoreLiteral>>> cycleEdgeReasonsMap;
         private Statistics stats;
 
         public CAATSolver.Status getStatus() { return status; }
         public DNF<CoreLiteral> getCoreReasons() { return coreReasons; }
+        public Map<Axiom, Map<Tuple, Conjunction<CoreLiteral>>> getCycleEdgeReasons() { return cycleEdgeReasonsMap; }
         public Statistics getStatistics() { return stats; }
 
         Result() {
             status = CAATSolver.Status.INCONCLUSIVE;
             coreReasons = DNF.FALSE();
+            cycleEdgeReasonsMap = new HashMap<>();
         }
 
         static Result fromCAATResult(CAATSolver.Result caatResult) {
