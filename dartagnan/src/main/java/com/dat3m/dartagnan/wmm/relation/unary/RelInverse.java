@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.wmm.relation.unary;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import com.dat3m.dartagnan.wmm.utils.TupleSetTree;
+import com.dat3m.dartagnan.wmm.utils.TupleSetMap;
 import com.google.common.collect.Sets;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
@@ -48,19 +48,19 @@ public class RelInverse extends UnaryRelation {
     }
 
     @Override
-    public TupleSetTree addEncodeTupleSet(TupleSet tuples){
+    public TupleSetMap addEncodeTupleSet(TupleSet tuples){
         TupleSet activeSet = new TupleSet(Sets.intersection(Sets.difference(tuples, encodeTupleSet), maxTupleSet));
         TupleSet oldEncodeSet = new TupleSet(encodeTupleSet);
         encodeTupleSet.addAll(activeSet);
         TupleSet difference = new TupleSet(Sets.difference(encodeTupleSet, oldEncodeSet));
-        TupleSetTree tree = new TupleSetTree(difference);
+        TupleSetMap map = new TupleSetMap(getName(), difference);
         activeSet.removeAll(getMinTupleSet());
 
         if(!activeSet.isEmpty()){
-            tree.setR1(r1.addEncodeTupleSet(activeSet.inverse()));
+            map.merge(r1.addEncodeTupleSet(activeSet.inverse()));
         }
 
-        return tree;
+        return map;
     }
 
     @Override

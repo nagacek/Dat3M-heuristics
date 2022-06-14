@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import com.dat3m.dartagnan.wmm.utils.TupleSetTree;
+import com.dat3m.dartagnan.wmm.utils.TupleSetMap;
 import com.google.common.collect.Sets;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
@@ -80,14 +80,14 @@ public class RelComposition extends BinaryRelation {
     }
 
     @Override
-    public TupleSetTree addEncodeTupleSet(TupleSet tuples){
+    public TupleSetMap addEncodeTupleSet(TupleSet tuples){
         Set<Tuple> activeSet = new HashSet<>(Sets.intersection(Sets.difference(tuples, encodeTupleSet), maxTupleSet));
         TupleSet oldEncodeSet = new TupleSet(encodeTupleSet);
         encodeTupleSet.addAll(activeSet);
         activeSet.removeAll(getMinTupleSet());
 
         TupleSet difference = new TupleSet(Sets.difference(encodeTupleSet, oldEncodeSet));
-        TupleSetTree tree = new TupleSetTree(difference);
+        TupleSetMap map = new TupleSetMap(getName(), difference);
 
         if(!activeSet.isEmpty()){
             TupleSet r1Set = new TupleSet();
@@ -108,11 +108,11 @@ public class RelComposition extends BinaryRelation {
                 }
             }
 
-            tree.setR1(r1.addEncodeTupleSet(r1Set));
-            tree.setR2(r2.addEncodeTupleSet(r2Set));
+            map.merge(r1.addEncodeTupleSet(r1Set));
+            map.merge(r2.addEncodeTupleSet(r2Set));
         }
 
-        return tree;
+        return map;
     }
 
     @Override

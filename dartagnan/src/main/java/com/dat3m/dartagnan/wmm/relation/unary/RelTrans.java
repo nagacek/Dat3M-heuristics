@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import com.dat3m.dartagnan.wmm.utils.TupleSetTree;
+import com.dat3m.dartagnan.wmm.utils.TupleSetMap;
 import com.google.common.collect.Sets;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
@@ -83,7 +83,7 @@ public class RelTrans extends UnaryRelation {
     }
 
     @Override
-    public TupleSetTree addEncodeTupleSet(TupleSet tuples){
+    public TupleSetMap addEncodeTupleSet(TupleSet tuples){
         TupleSet activeSet = new TupleSet(Sets.intersection(Sets.difference(tuples, encodeTupleSet), maxTupleSet));
         encodeTupleSet.addAll(activeSet);
 
@@ -91,12 +91,12 @@ public class RelTrans extends UnaryRelation {
         TupleSet oldFullEncodeSet = new TupleSet(fullEncodeTupleSet);
         boolean wasAdded = fullEncodeTupleSet.addAll(fullActiveSet);
         TupleSet difference = new TupleSet(Sets.difference(fullEncodeTupleSet, oldFullEncodeSet));
-        TupleSetTree tree = new TupleSetTree(difference);
+        TupleSetMap map = new TupleSetMap(getName(), difference);
         if(wasAdded){
             fullActiveSet.removeAll(getMinTupleSet());
-            tree.setR1(r1.addEncodeTupleSet(fullActiveSet));
+            map.merge(r1.addEncodeTupleSet(fullActiveSet));
         }
-        return tree;
+        return map;
     }
 
     @Override

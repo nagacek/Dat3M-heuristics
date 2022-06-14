@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.wmm.relation;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
-import com.dat3m.dartagnan.wmm.utils.TupleSetTree;
+import com.dat3m.dartagnan.wmm.utils.TupleSetMap;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -104,10 +104,10 @@ public class RecursiveRelation extends Relation {
     }
 
     @Override
-    public TupleSetTree addEncodeTupleSet(TupleSet tuples){
+    public TupleSetMap addEncodeTupleSet(TupleSet tuples){
         TupleSet oldEncodeSet = new TupleSet(encodeTupleSet);
         TupleSet difference = new TupleSet();
-        TupleSetTree tree = new TupleSetTree(difference);
+        TupleSetMap map = new TupleSetMap(getName(), difference);
         if(encodeTupleSet != tuples){
             encodeTupleSet.addAll(tuples);
             difference.addAll(encodeTupleSet);
@@ -116,11 +116,11 @@ public class RecursiveRelation extends Relation {
         }
         if(doRecurse){
             doRecurse = false;
-            tree.setR1(r1.addEncodeTupleSet(encodeTupleSet));
+            map.merge(r1.addEncodeTupleSet(encodeTupleSet));
         }
         difference.removeAll(oldEncodeSet);
 
-        return tree;
+        return map;
     }
 
     @Override
