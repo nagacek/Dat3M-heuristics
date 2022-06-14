@@ -134,14 +134,23 @@ public class RelRMW extends StaticRelation {
 
     @Override
     protected BooleanFormula encodeApprox(SolverContext ctx) {
-        FormulaManager fmgr = ctx.getFormulaManager();
-		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
-        
         // Encode base (not exclusive pairs) RMW
         TupleSet origEncodeTupleSet = encodeTupleSet;
         encodeTupleSet = new TupleSet(Sets.intersection(encodeTupleSet, baseMaxTupleSet));
         BooleanFormula enc = super.encodeApprox(ctx);
         encodeTupleSet = origEncodeTupleSet;
+        return encodeApproxBaseFrame(ctx, enc);
+    }
+
+    @Override
+    public BooleanFormula encodeApprox(SolverContext ctx, TupleSet toEncode) {
+        BooleanFormula enc = super.encodeApprox(ctx, new TupleSet(Sets.intersection(toEncode, baseMaxTupleSet)));
+        return encodeApproxBaseFrame(ctx, enc);
+    }
+
+    private BooleanFormula encodeApproxBaseFrame(SolverContext ctx, BooleanFormula enc) {
+        FormulaManager fmgr = ctx.getFormulaManager();
+		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
 
         // Encode RMW for exclusive pairs
 		BooleanFormula unpredictable = bmgr.makeFalse();

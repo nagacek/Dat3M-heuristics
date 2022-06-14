@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import com.dat3m.dartagnan.wmm.utils.TupleSetTree;
 import com.google.common.collect.Sets;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
@@ -82,25 +83,35 @@ public class RelTrans extends UnaryRelation {
     }
 
     @Override
-    public void addEncodeTupleSet(TupleSet tuples){
+    public TupleSetTree addEncodeTupleSet(TupleSet tuples){
         TupleSet activeSet = new TupleSet(Sets.intersection(Sets.difference(tuples, encodeTupleSet), maxTupleSet));
         encodeTupleSet.addAll(activeSet);
 
         TupleSet fullActiveSet = getFullEncodeTupleSet(activeSet);
-        if(fullEncodeTupleSet.addAll(fullActiveSet)){
+        TupleSet oldFullEncodeSet = new TupleSet(fullEncodeTupleSet);
+        boolean wasAdded = fullEncodeTupleSet.addAll(fullActiveSet);
+        TupleSet difference = new TupleSet(Sets.difference(fullEncodeTupleSet, oldFullEncodeSet));
+        TupleSetTree tree = new TupleSetTree(difference);
+        if(wasAdded){
             fullActiveSet.removeAll(getMinTupleSet());
-            r1.addEncodeTupleSet(fullActiveSet);
+            tree.setR1(r1.addEncodeTupleSet(fullActiveSet));
         }
+        return tree;
     }
 
     @Override
     protected BooleanFormula encodeApprox(SolverContext ctx) {
-    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-		BooleanFormula enc = bmgr.makeTrue();
+    	return encodeApprox(ctx, fullEncodeTupleSet);
+    }
+
+    @Override
+    public BooleanFormula encodeApprox(SolverContext ctx, TupleSet toEncode) {
+        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        BooleanFormula enc = bmgr.makeTrue();
 
         TupleSet minSet = getMinTupleSet();
         TupleSet r1Max = r1.getMaxTupleSet();
-        for(Tuple tuple : fullEncodeTupleSet){
+        for(Tuple tuple : toEncode){
             if (minSet.contains(tuple)) {
                 if(Relation.PostFixApprox) {
                     enc = bmgr.and(enc, bmgr.implication(getExecPair(tuple, ctx), this.getSMTVar(tuple, ctx)));

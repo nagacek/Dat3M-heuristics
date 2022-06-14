@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.wmm.relation.binary;
 
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import com.dat3m.dartagnan.wmm.utils.TupleSetTree;
 import com.google.common.collect.Sets;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
@@ -55,15 +56,20 @@ public abstract class BinaryRelation extends Relation {
     }
 
     @Override
-    public void addEncodeTupleSet(TupleSet tuples){ // Not valid for composition
+    public TupleSetTree addEncodeTupleSet(TupleSet tuples){ // Not valid for composition
         TupleSet activeSet = new TupleSet(Sets.intersection(Sets.difference(tuples, encodeTupleSet), maxTupleSet));
+        TupleSet oldEncodeSet = new TupleSet(encodeTupleSet);
         encodeTupleSet.addAll(activeSet);
         activeSet.removeAll(getMinTupleSet());
 
+        TupleSet difference = new TupleSet(Sets.difference(encodeTupleSet, oldEncodeSet));
+        TupleSetTree tree = new TupleSetTree(difference);
         if(!activeSet.isEmpty()){
-            r1.addEncodeTupleSet(activeSet);
-            r2.addEncodeTupleSet(activeSet);
+            tree.setR1(r1.addEncodeTupleSet(activeSet));
+            tree.setR2(r2.addEncodeTupleSet(activeSet));
         }
+
+        return tree;
     }
 
     @Override

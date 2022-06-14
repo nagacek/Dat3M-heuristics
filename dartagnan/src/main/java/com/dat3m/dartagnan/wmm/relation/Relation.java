@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.wmm.relation.binary.BinaryRelation;
 import com.dat3m.dartagnan.wmm.relation.unary.UnaryRelation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import com.dat3m.dartagnan.wmm.utils.TupleSetTree;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -111,8 +112,10 @@ public abstract class Relation implements Encoder, Dependent<Relation> {
         return encodeTupleSet;
     }
 
-    public void addEncodeTupleSet(TupleSet tuples){
+    public TupleSetTree addEncodeTupleSet(TupleSet tuples){
+        TupleSet oldEncodeSet = new TupleSet(encodeTupleSet);
         encodeTupleSet.addAll(Sets.intersection(tuples, maxTupleSet));
+        return new TupleSetTree(new TupleSet(Sets.difference(encodeTupleSet, oldEncodeSet)));
     }
 
     public String getName() {
@@ -165,6 +168,8 @@ public abstract class Relation implements Encoder, Dependent<Relation> {
     }
 
     protected abstract BooleanFormula encodeApprox(SolverContext ctx);
+
+    public abstract BooleanFormula encodeApprox(SolverContext ctx, TupleSet toEncode);
 
     protected BooleanFormula doEncode(SolverContext ctx){
         if(!encodeTupleSet.isEmpty() || forceDoEncode){

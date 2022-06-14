@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import com.dat3m.dartagnan.wmm.utils.TupleSetTree;
 import com.google.common.collect.Sets;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
@@ -79,10 +80,14 @@ public class RelComposition extends BinaryRelation {
     }
 
     @Override
-    public void addEncodeTupleSet(TupleSet tuples){
+    public TupleSetTree addEncodeTupleSet(TupleSet tuples){
         Set<Tuple> activeSet = new HashSet<>(Sets.intersection(Sets.difference(tuples, encodeTupleSet), maxTupleSet));
+        TupleSet oldEncodeSet = new TupleSet(encodeTupleSet);
         encodeTupleSet.addAll(activeSet);
         activeSet.removeAll(getMinTupleSet());
+
+        TupleSet difference = new TupleSet(Sets.difference(encodeTupleSet, oldEncodeSet));
+        TupleSetTree tree = new TupleSetTree(difference);
 
         if(!activeSet.isEmpty()){
             TupleSet r1Set = new TupleSet();
@@ -103,21 +108,28 @@ public class RelComposition extends BinaryRelation {
                 }
             }
 
-            r1.addEncodeTupleSet(r1Set);
-            r2.addEncodeTupleSet(r2Set);
+            tree.setR1(r1.addEncodeTupleSet(r1Set));
+            tree.setR2(r2.addEncodeTupleSet(r2Set));
         }
+
+        return tree;
     }
 
     @Override
     protected BooleanFormula encodeApprox(SolverContext ctx) {
-    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-		BooleanFormula enc = bmgr.makeTrue();
+    	return encodeApprox(ctx, encodeTupleSet);
+    }
+
+    @Override
+    public BooleanFormula encodeApprox(SolverContext ctx, TupleSet toEncode) {
+        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        BooleanFormula enc = bmgr.makeTrue();
 
         TupleSet r1Set = r1.getEncodeTupleSet();
         TupleSet r2Set = r2.getEncodeTupleSet();
         TupleSet minSet = getMinTupleSet();
 
-        for(Tuple tuple : encodeTupleSet) {
+        for(Tuple tuple : toEncode) {
             BooleanFormula expr = bmgr.makeFalse();
             if (minSet.contains(tuple)) {
                 expr = getExecPair(tuple, ctx);

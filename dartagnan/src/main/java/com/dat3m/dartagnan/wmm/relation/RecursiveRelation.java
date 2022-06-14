@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.wmm.relation;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import com.dat3m.dartagnan.wmm.utils.TupleSetTree;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -103,16 +104,23 @@ public class RecursiveRelation extends Relation {
     }
 
     @Override
-    public void addEncodeTupleSet(TupleSet tuples){
+    public TupleSetTree addEncodeTupleSet(TupleSet tuples){
+        TupleSet oldEncodeSet = new TupleSet(encodeTupleSet);
+        TupleSet difference = new TupleSet();
+        TupleSetTree tree = new TupleSetTree(difference);
         if(encodeTupleSet != tuples){
             encodeTupleSet.addAll(tuples);
+            difference.addAll(encodeTupleSet);
             //TODO: This encodeTupleSet is never used except to stop this recursion
             // Can it get larger than r1's encodeTupleSet???
         }
         if(doRecurse){
             doRecurse = false;
-            r1.addEncodeTupleSet(encodeTupleSet);
+            tree.setR1(r1.addEncodeTupleSet(encodeTupleSet));
         }
+        difference.removeAll(oldEncodeSet);
+
+        return tree;
     }
 
     @Override
@@ -139,4 +147,8 @@ public class RecursiveRelation extends Relation {
         return r1.encodeApprox(ctx);
     }
 
+    @Override
+    public BooleanFormula encodeApprox(SolverContext ctx, TupleSet toEncode) {
+        return encodeApprox(ctx);
+    }
 }
