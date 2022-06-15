@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.relation.Relation;
+import com.dat3m.dartagnan.wmm.utils.TupleSetMap;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -109,14 +110,17 @@ public class WMMSolver {
         private CAATSolver.Status status;
         private DNF<CoreLiteral> coreReasons;
         private Statistics stats;
+        private TupleSetMap hotEdges;
 
         public CAATSolver.Status getStatus() { return status; }
         public DNF<CoreLiteral> getCoreReasons() { return coreReasons; }
         public Statistics getStatistics() { return stats; }
+        public TupleSetMap getHotEdges() { return hotEdges; }
 
         Result() {
             status = CAATSolver.Status.INCONCLUSIVE;
             coreReasons = DNF.FALSE();
+            hotEdges = new TupleSetMap();
         }
 
         static Result fromCAATResult(CAATSolver.Result caatResult) {

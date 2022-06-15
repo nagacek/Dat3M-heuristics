@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.encoding.SymmetryEncoder;
 import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
+import com.dat3m.dartagnan.solver.caat4wmm.DynamicEagerEncoder;
 import com.dat3m.dartagnan.solver.caat4wmm.statistics.GlobalStatistics;
 import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
 import com.dat3m.dartagnan.solver.caat4wmm.WMMSolver;
@@ -84,6 +85,7 @@ public class RefinementSolver {
         Program program = task.getProgram();
         WMMSolver solver = new WMMSolver(task, cutRelations, intermediateStatistics);
         Refiner refiner = new Refiner(task);
+        DynamicEagerEncoder eagerEncoder = new DynamicEagerEncoder(ctx, task.getMemoryModel().getRelationRepository());
         CAATSolver.Status status = INCONSISTENT;
 
         BooleanFormula propertyEncoding = propertyEncoder.encodeSpecification(task.getProperty(), ctx);
@@ -146,6 +148,8 @@ public class RefinementSolver {
                 DNF<CoreLiteral> reasons = solverResult.getCoreReasons();
                 foundCoreReasons.add(reasons);
                 prover.addConstraint(refiner.refine(reasons, ctx));
+
+                prover.addConstraint(eagerEncoder.encodeEagerly(solverResult.getHotEdges()));
 
                 if (REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES) {
                     generateGraphvizFiles(task, solver.getExecution(), iterationCount, reasons);

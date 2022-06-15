@@ -3,6 +3,8 @@ package com.dat3m.dartagnan.wmm.utils;
 import com.google.common.collect.Sets;
 
 import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 public class TupleSetMap {
     private HashMap<String, TupleSet> map;
@@ -26,6 +28,17 @@ public class TupleSetMap {
 
     public TupleSet getDifference(String name) {
         return map.get(name);
+    }
+
+    public Set<Map.Entry<String, TupleSet>> getEntries() { return map.entrySet(); }
+
+    @Override
+    public String toString() {
+        StringBuilder str = new StringBuilder();
+        for (var entry : map.entrySet()) {
+            str.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+        }
+        return str.toString();
     }
 
     protected HashMap<String, TupleSet> getMap() {
