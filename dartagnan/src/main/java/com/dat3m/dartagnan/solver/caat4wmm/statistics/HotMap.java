@@ -5,8 +5,11 @@ import com.dat3m.dartagnan.utils.collections.UpdatableValue;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /*
     Double map counting occurrences of arguments corresponding to a given name.
@@ -60,6 +63,35 @@ public class HotMap <T>{
                 counter.update();
             }
         }
+    }
+
+    public float getAverage(Function<String, Boolean> considerRelation) {
+        int i = 0;
+        float value = 0f;
+        for (var relation : map.entrySet()) {
+            if (considerRelation.apply(relation.getKey())) {
+                for (var tuple : relation.getValue().entrySet()) {
+                    i++;
+                    value += tuple.getValue().current();
+                }
+            }
+        }
+        return value / i;
+    }
+
+    public HashMap<String, Set<T>> getAll(Function<String, Boolean> considerRelation, Predicate<Map.Entry<T, UpdatableValue<Float>>> threshold) {
+        HashMap<String, Set<T>> candidates = new HashMap<>();
+        for (var relation : map.entrySet()) {
+            if (!considerRelation.apply(relation.getKey())) {
+                continue;
+            }
+            Set<T> tuples = relation.getValue().entrySet().stream()
+                    .filter(threshold)
+                    .map(Map.Entry::getKey)
+                    .collect(Collectors.toSet());
+            candidates.put(relation.getKey(), tuples);
+        }
+        return candidates;
     }
 
     protected UpdatableValue<Float> get(String name, T argument) {
@@ -117,15 +149,20 @@ public class HotMap <T>{
         }
     }
 
-    public String toString(Function<T, String> func) {
+    public ArrayList<Map.Entry<String, Map.Entry<T, UpdatableValue<Float>>>> sort() {
         ArrayList<Map.Entry<String, Map.Entry<T, UpdatableValue<Float>>>> sorted = new ArrayList<>();
-        StringBuilder str = new StringBuilder();
         for (var relation : map.keySet()) {
             for (var edge : map.get(relation).entrySet()){
                 sorted.add(Map.entry(relation, edge));
             }
         }
         sorted.sort((obj1, obj2) -> obj2.getValue().getValue().current().compareTo(obj1.getValue().getValue().current()));
+        return sorted;
+    }
+
+    public String toString(Function<T, String> func) {
+        ArrayList<Map.Entry<String, Map.Entry<T, UpdatableValue<Float>>>> sorted = sort();
+        StringBuilder str = new StringBuilder();
         for (int i = 0; i < Math.min(MAX_HOTNESS, sorted.size() - 1); i++) {
             String name = sorted.get(i).getKey();
             T argument = sorted.get(i).getValue().getKey();

@@ -82,8 +82,8 @@ public class RefinementSolver {
         SymmetryEncoder symmEncoder = task.getSymmetryEncoder();
 
         IntermediateStatistics intermediateStatistics = new IntermediateStatistics();
+        task.getMemoryModel().getRelationRepository().getRelations().forEach(relation -> relation.initializeEncoding(ctx));
 
-        TupleSetMap allEncodedEdges = new TupleSetMap();
         Program program = task.getProgram();
         WMMSolver solver = new WMMSolver(task, cutRelations, intermediateStatistics);
         Refiner refiner = new Refiner(task);
@@ -145,7 +145,6 @@ public class RefinementSolver {
             logger.debug("Refinement iteration:\n{}", stats);
 
             RelationRepository rels = task.getMemoryModel().getRelationRepository();
-            allEncodedEdges.merge(DynamicEagerEncoder.determineEncodedTuples(solverResult.getHotEdges(), rels));
 
             status = solverResult.getStatus();
             if (status == INCONSISTENT) {
@@ -154,7 +153,8 @@ public class RefinementSolver {
                 prover.addConstraint(refiner.refine(reasons, ctx));
 
                 TupleSetMap encodedEdges = DynamicEagerEncoder.determineEncodedTuples(solverResult.getHotEdges(), rels);
-                prover.addConstraint(DynamicEagerEncoder.encodeEagerly(encodedEdges, rels, ctx));
+                BooleanFormula eagerly = DynamicEagerEncoder.encodeEagerly(encodedEdges, rels, ctx);
+                prover.addConstraint(eagerly);
                 solver.addEagerlyEncodedEdges(encodedEdges);
 
                 if (REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES) {
@@ -176,6 +176,8 @@ public class RefinementSolver {
                         message.append(intermediateStatistics);
                         GlobalStatistics.newIteration();
                         intermediateStatistics.update();
+                        message.append("\n\n\n\n\nChose edge").append(solverResult.getHotEdges());
+                        message.append("\n\nAffected edges\n").append(encodedEdges);
                         logger.trace(message);
                     }
                 }

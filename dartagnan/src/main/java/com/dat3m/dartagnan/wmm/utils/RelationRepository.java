@@ -112,7 +112,7 @@ public class RelationRepository {
         throw new UnsupportedOperationException("Method getArgsForClass is not implemented for " + cls.getName());
     }
 
-    private Relation getBasicRelation(String name){
+    public Relation getBasicRelation(String name){
         switch (name){
             case POWITHLOCALEVENTS:
                 return new RelPo(true);

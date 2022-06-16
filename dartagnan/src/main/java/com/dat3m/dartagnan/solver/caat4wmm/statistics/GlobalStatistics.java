@@ -26,8 +26,8 @@ public class GlobalStatistics {
 
     public static final boolean globalStats = true;
     public static final boolean showTree = false;
-    public static final boolean showNotMemoized = true;
-    public static final boolean showMemoized = true;
+    public static final boolean showNotMemoized = false;
+    public static final boolean showMemoized = false;
     public static final int MAX_HOTNESS = 30;
     private static ExecutionGraph executionGraph;
     private static EventDomain domain;
@@ -152,7 +152,7 @@ public class GlobalStatistics {
             } else if (currentTree.getRight().getName().equals(name)) {
                 currentTree = currentTree.getRight();
             } else {
-                throw new IllegalStateException("Faulty tree");
+                //throw new IllegalStateException("Faulty tree");
             }
         }
         currentTree.increment();
@@ -162,7 +162,7 @@ public class GlobalStatistics {
         if (currentTree != null) {
             currentTree = currentTree.getParent();
         } else {
-            throw new IllegalStateException("Faulty tree");
+            //throw new IllegalStateException("Faulty tree");
         }
     }
 

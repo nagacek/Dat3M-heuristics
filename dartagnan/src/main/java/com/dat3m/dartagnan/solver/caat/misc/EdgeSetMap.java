@@ -54,6 +54,10 @@ public class EdgeSetMap {
         return edges == null ? false : edges.contains(edge);
     }
 
+    public boolean contains(String name) {
+        return map.get(name) != null;
+    }
+
     private void initAndAdd(String name, Edge edge) {
         if (!map.containsKey(name)) {
             map.put(name, new HashSet<>());

@@ -1,10 +1,10 @@
 package com.dat3m.dartagnan.wmm.utils;
 
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.witness.Edge;
 import com.google.common.collect.Sets;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class TupleSetMap {
     private HashMap<String, TupleSet> map;
@@ -16,6 +16,19 @@ public class TupleSetMap {
     public TupleSetMap(String name, TupleSet set) {
         map = new HashMap<>();
         map.put(name, set);
+    }
+
+    public TupleSetMap(HashMap<String, Set<List<Event>>> other) {
+        map = new HashMap<>();
+        for (var entry : other.entrySet()) {
+            TupleSet newSet = new TupleSet();
+            entry.getValue().forEach(e -> {
+                if (e.size() == 2)
+                    newSet.add(new Tuple(e.get(0), e.get(1)));
+            });
+            if (newSet.size() > 0)
+                map.put(entry.getKey(), newSet);
+        }
     }
 
     public TupleSetMap() {
@@ -32,7 +45,11 @@ public class TupleSetMap {
 
     public boolean contains(String name, Tuple tuple) {
         TupleSet contained = map.get(name);
-        return contained == null ? false : contained.contains(tuple);
+        return contained != null && contained.contains(tuple);
+    }
+
+    public boolean contains(String name) {
+        return map.get(name) != null;
     }
 
     public Set<Map.Entry<String, TupleSet>> getEntries() { return map.entrySet(); }

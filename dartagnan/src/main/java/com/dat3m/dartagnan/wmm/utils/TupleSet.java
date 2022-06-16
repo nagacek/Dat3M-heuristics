@@ -129,7 +129,13 @@ public class TupleSet implements Set<Tuple>{
 
     @Override
     public String toString(){
-        return tuples.toString();
+        StringBuilder str = new StringBuilder();
+        str.append("{ ");
+        for (Tuple tuple : tuples) {
+            str.append("(").append(tuple.getFirst().getCId()).append(",").append(tuple.getSecond().getCId()).append("), ");
+        }
+        str.append(" }");
+        return str.toString();
     }
 
     public Set<Tuple> getByFirst(Event e){

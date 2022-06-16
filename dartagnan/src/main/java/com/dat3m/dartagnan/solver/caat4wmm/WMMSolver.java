@@ -8,6 +8,8 @@ import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreReasoner;
 import com.dat3m.dartagnan.solver.caat4wmm.statistics.GlobalStatistics;
 import com.dat3m.dartagnan.solver.caat4wmm.statistics.IntermediateStatistics;
+import com.dat3m.dartagnan.solver.caat4wmm.statistics.heuristics.EagerEncodingHeuristic;
+import com.dat3m.dartagnan.solver.caat4wmm.statistics.heuristics.SimpleEdgeCount;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -33,6 +35,7 @@ public class WMMSolver {
     private final CAATSolver solver;
     private final CoreReasoner reasoner;
     private final IntermediateStatistics intermediateStats;
+    private final EagerEncodingHeuristic heuristic;
     private boolean initGlobalStats;
 
     public WMMSolver(VerificationTask task, Set<Relation> cutRelations) {
@@ -42,15 +45,18 @@ public class WMMSolver {
         this.reasoner = new CoreReasoner(task, executionGraph);
         this.solver = CAATSolver.create();
         this.intermediateStats = null;
+        this.heuristic = null;
     }
 
     public WMMSolver(VerificationTask task, Set<Relation> cutRelations, IntermediateStatistics stats) {
         task.getAnalysisContext().requires(RelationAnalysis.class);
         this.executionGraph = new ExecutionGraph(task, cutRelations, true);
         this.executionModel = new ExecutionModel(task);
-        this.reasoner = new CoreReasoner(task, executionGraph);
-        this.solver = CAATSolver.create(stats, new EdgeManager(executionModel));
+        EdgeManager manager = new EdgeManager(executionModel);
+        this.reasoner = new CoreReasoner(task, executionGraph, manager);
+        this.solver = CAATSolver.create(stats, manager);
         this.intermediateStats = stats;
+        this.heuristic = new SimpleEdgeCount(task, 5, 10);
     }
 
     public ExecutionModel getExecution() {
@@ -94,6 +100,7 @@ public class WMMSolver {
             }
             stats.numComputedCoreReasons = coreReasons.size();
             result.coreReasons = new DNF<>(coreReasons);
+            result.hotEdges = intermediateStats.computeHotEdges(heuristic);
             if (GlobalStatistics.globalStats) {
                 GlobalStatistics.insertCoreEdges(coreReasons);
                 GlobalStatistics.insertBaseEdges(baseReasons);
@@ -143,6 +150,7 @@ public class WMMSolver {
         public String toString() {
             return status + "\n" +
                     coreReasons + "\n" +
+                    hotEdges + "\n" +
                     stats;
         }
     }

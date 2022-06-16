@@ -30,4 +30,8 @@ public class EdgeManager {
     public boolean isEagerlyEncoded(String name, Edge edge) {
         return caatEdges.contains(name, edge);
     }
+
+    public boolean isEagerlyEncoded(String name) {
+        return edges.contains(name);
+    }
 }

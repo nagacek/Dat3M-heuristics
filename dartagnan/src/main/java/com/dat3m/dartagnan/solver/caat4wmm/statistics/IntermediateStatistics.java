@@ -6,9 +6,11 @@ import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.solver.caat.predicates.sets.Element;
 import com.dat3m.dartagnan.solver.caat4wmm.EventDomain;
 import com.dat3m.dartagnan.solver.caat4wmm.ExecutionGraph;
+import com.dat3m.dartagnan.solver.caat4wmm.statistics.heuristics.EagerEncodingHeuristic;
 import com.dat3m.dartagnan.utils.collections.UpdatableValue;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.dat3m.dartagnan.wmm.utils.TupleSetMap;
 
 import java.util.*;
 import java.util.function.BiConsumer;
@@ -30,6 +32,10 @@ public class IntermediateStatistics {
         computedRelations = new HashMap<>();
         iterationsWOMemoized = new HotMap<>();
         iterationCounter = 1;
+    }
+
+    public TupleSetMap computeHotEdges(EagerEncodingHeuristic method) {
+        return method.chooseHotEdges(edges, edgesWOMemoized, iterations, iterationsWOMemoized, iterationCounter);
     }
 
     public void initializeFromExecutionGraph(ExecutionGraph exec) {
@@ -86,7 +92,7 @@ public class IntermediateStatistics {
         }
     }
 
-    private Event caatIdToEvent(int caatId) {
+    public Event caatIdToEvent(int caatId) {
         if (domain != null) {
             EventData eventData = domain.getObjectById(caatId);
             return eventData.getEvent();

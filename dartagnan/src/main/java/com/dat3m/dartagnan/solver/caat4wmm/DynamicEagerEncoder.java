@@ -22,7 +22,7 @@ public class DynamicEagerEncoder {
         BooleanFormula eagerEncoding = manager.makeTrue();
         for (var entry : toEncode.getEntries()) {
             Relation rel = rels.getRelation(entry.getKey());
-            manager.and(eagerEncoding, rel.encodeApprox(ctx, entry.getValue()));
+            eagerEncoding = manager.and(eagerEncoding, rel.encodeApprox(ctx, entry.getValue()));
         }
         return eagerEncoding;
     }
