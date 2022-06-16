@@ -15,7 +15,7 @@ public abstract class EagerEncodingHeuristic {
         this.rels = task.getMemoryModel().getRelationRepository();
     }
     public abstract TupleSetMap chooseHotEdges(HotMap<List<Event>> edges, HotMap<List<Event>> edgesWOMemoized,
-                               HotMap<List<Event>> iterations, HotMap<List<Event>> iterationsWOMemoized, int iteration);
+                               HotMap<List<Event>> iterations, HotMap<List<Event>> iterationsWOMemoized, HotMap<List<Event>> metric, int iteration);
 
     protected boolean isBase(String name) {
         return rels.getBasicRelation(name) != null;

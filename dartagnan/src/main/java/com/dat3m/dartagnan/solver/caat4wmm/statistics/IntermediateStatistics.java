@@ -21,6 +21,7 @@ public class IntermediateStatistics {
     private final HotMap<List<Event>> edgesWOMemoized;
     private final HotMap<List<Event>> iterations;
     private final HotMap<List<Event>> iterationsWOMemoized;
+    private HotMap<List<Event>> metric;
     private final HashMap<Tuple, ArrayList<ReasonElement>> computedRelations;
     private EventDomain domain;
     private int iterationCounter;
@@ -31,11 +32,12 @@ public class IntermediateStatistics {
         iterations = new HotMap<>();
         computedRelations = new HashMap<>();
         iterationsWOMemoized = new HotMap<>();
+        metric = new HotMap<>();
         iterationCounter = 1;
     }
 
     public TupleSetMap computeHotEdges(EagerEncodingHeuristic method) {
-        return method.chooseHotEdges(edges, edgesWOMemoized, iterations, iterationsWOMemoized, iterationCounter);
+        return method.chooseHotEdges(edges, edgesWOMemoized, iterations, iterationsWOMemoized, metric, iterationCounter);
     }
 
     public void initializeFromExecutionGraph(ExecutionGraph exec) {
@@ -47,6 +49,7 @@ public class IntermediateStatistics {
         edgesWOMemoized.update();
         iterations.update();
         iterationsWOMemoized.update();
+        metric = edges.per(iterations, iterationCounter);
         computedRelations.clear();
         iterationCounter++;
     }
@@ -166,7 +169,7 @@ public class IntermediateStatistics {
             str.append(stringMapToString(edges.summarizeName()));
             str.append("\n\nHot intermediates by iterations:").append(iterations.toString(listString));
             str.append("\n\nHot intermediates by #edges * #occ. iterations / #iterations:");
-            str.append(edges.per(iterations, iterationCounter).toString(listString));
+            str.append(metric.toString(listString));
         }
         str.append("\n");
         return str.toString();

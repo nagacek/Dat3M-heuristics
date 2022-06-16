@@ -2,21 +2,21 @@ package com.dat3m.dartagnan.solver.caat4wmm;
 
 
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
-import com.dat3m.dartagnan.solver.caat.misc.EdgeSetMap;
 import com.dat3m.dartagnan.solver.caat.reasoning.CAATLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreReasoner;
 import com.dat3m.dartagnan.solver.caat4wmm.statistics.GlobalStatistics;
 import com.dat3m.dartagnan.solver.caat4wmm.statistics.IntermediateStatistics;
 import com.dat3m.dartagnan.solver.caat4wmm.statistics.heuristics.EagerEncodingHeuristic;
-import com.dat3m.dartagnan.solver.caat4wmm.statistics.heuristics.SimpleEdgeCount;
+import com.dat3m.dartagnan.solver.caat4wmm.statistics.heuristics.SimpleIterationCount;
+import com.dat3m.dartagnan.solver.caat4wmm.statistics.heuristics.SimpleMetricCount;
+import com.dat3m.dartagnan.solver.caat4wmm.statistics.heuristics.SimpleOccurrenceCount;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.relation.Relation;
-import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSetMap;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -56,7 +56,7 @@ public class WMMSolver {
         this.reasoner = new CoreReasoner(task, executionGraph, manager);
         this.solver = CAATSolver.create(stats, manager);
         this.intermediateStats = stats;
-        this.heuristic = new SimpleEdgeCount(task, 5, 10);
+        this.heuristic = new SimpleOccurrenceCount(task, 5, 10);
     }
 
     public ExecutionModel getExecution() {

@@ -8,16 +8,13 @@ import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.dat3m.dartagnan.wmm.utils.TupleSetMap;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
-public class SimpleEdgeCount extends EagerEncodingHeuristic {
+public class SimpleIterationCount extends EagerEncodingHeuristic {
     private int startIteration;
     private float strength;
 
-    public SimpleEdgeCount(VerificationTask task, int startIteration, float strength) {
+    public SimpleIterationCount(VerificationTask task, int startIteration, float strength) {
         super(task);
         this.startIteration = startIteration;
         this.strength = strength;
@@ -25,7 +22,7 @@ public class SimpleEdgeCount extends EagerEncodingHeuristic {
 
     @Override
     public TupleSetMap chooseHotEdges(HotMap<List<Event>> edges, HotMap<List<Event>> edgesWOMemoized,
-                                      HotMap<List<Event>> iterations, HotMap<List<Event>> iterationsWOMemoized, int iteration) {
+                                      HotMap<List<Event>> iterations, HotMap<List<Event>> iterationsWOMemoized, HotMap<List<Event>> metric, int iteration) {
         if (iteration < startIteration) {
             return new TupleSetMap();
         }
@@ -33,7 +30,7 @@ public class SimpleEdgeCount extends EagerEncodingHeuristic {
         //entry.getValue().current() >= average * strength &&
         //HashMap<String, Set<List<Event>>> chosen = edges.getAll(s -> !isBase(s), entry ->  entry.getKey().size() == 2 && strength - number.getAndDecrement() > 0);
 
-        var sorted = edges.sort();
+        var sorted = iterations.sort();
         TupleSetMap chosenEdges = new TupleSetMap();
         for (int i = 0; i < strength && i < sorted.size(); i++) {
             var value = sorted.get(i);
@@ -43,5 +40,4 @@ public class SimpleEdgeCount extends EagerEncodingHeuristic {
         }
         return chosenEdges;
     }
-    
 }
