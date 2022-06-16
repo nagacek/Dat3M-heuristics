@@ -28,6 +28,7 @@ import com.dat3m.dartagnan.wmm.relation.base.stat.RelFencerel;
 import com.dat3m.dartagnan.wmm.relation.base.stat.RelSetIdentity;
 import com.dat3m.dartagnan.wmm.relation.binary.RelMinus;
 import com.dat3m.dartagnan.wmm.utils.RelationRepository;
+import com.dat3m.dartagnan.wmm.utils.TupleSetMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -82,10 +83,10 @@ public class RefinementSolver {
 
         IntermediateStatistics intermediateStatistics = new IntermediateStatistics();
 
+        TupleSetMap allEncodedEdges = new TupleSetMap();
         Program program = task.getProgram();
         WMMSolver solver = new WMMSolver(task, cutRelations, intermediateStatistics);
         Refiner refiner = new Refiner(task);
-        DynamicEagerEncoder eagerEncoder = new DynamicEagerEncoder(ctx, task.getMemoryModel().getRelationRepository());
         CAATSolver.Status status = INCONSISTENT;
 
         BooleanFormula propertyEncoding = propertyEncoder.encodeSpecification(task.getProperty(), ctx);
@@ -143,13 +144,18 @@ public class RefinementSolver {
             statList.add(stats);
             logger.debug("Refinement iteration:\n{}", stats);
 
+            RelationRepository rels = task.getMemoryModel().getRelationRepository();
+            allEncodedEdges.merge(DynamicEagerEncoder.determineEncodedTuples(solverResult.getHotEdges(), rels));
+
             status = solverResult.getStatus();
             if (status == INCONSISTENT) {
                 DNF<CoreLiteral> reasons = solverResult.getCoreReasons();
                 foundCoreReasons.add(reasons);
                 prover.addConstraint(refiner.refine(reasons, ctx));
 
-                prover.addConstraint(eagerEncoder.encodeEagerly(solverResult.getHotEdges()));
+                TupleSetMap encodedEdges = DynamicEagerEncoder.determineEncodedTuples(solverResult.getHotEdges(), rels);
+                prover.addConstraint(DynamicEagerEncoder.encodeEagerly(encodedEdges, rels, ctx));
+                solver.addEagerlyEncodedEdges(encodedEdges);
 
                 if (REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES) {
                     generateGraphvizFiles(task, solver.getExecution(), iterationCount, reasons);

@@ -30,6 +30,11 @@ public class TupleSetMap {
         return map.get(name);
     }
 
+    public boolean contains(String name, Tuple tuple) {
+        TupleSet contained = map.get(name);
+        return contained == null ? false : contained.contains(tuple);
+    }
+
     public Set<Map.Entry<String, TupleSet>> getEntries() { return map.entrySet(); }
 
     @Override

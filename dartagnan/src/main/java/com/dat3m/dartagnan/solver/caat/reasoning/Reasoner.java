@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.solver.caat.reasoning;
 import com.dat3m.dartagnan.solver.caat.constraints.AcyclicityConstraint;
 import com.dat3m.dartagnan.solver.caat.constraints.Constraint;
 import com.dat3m.dartagnan.solver.caat.misc.EdgeDirection;
+import com.dat3m.dartagnan.solver.caat.misc.EdgeSetMap;
 import com.dat3m.dartagnan.solver.caat.predicates.CAATPredicate;
 import com.dat3m.dartagnan.solver.caat.predicates.Derivable;
 import com.dat3m.dartagnan.solver.caat.predicates.misc.PredicateVisitor;
@@ -10,10 +11,12 @@ import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.solver.caat.predicates.sets.Element;
 import com.dat3m.dartagnan.solver.caat.predicates.sets.SetPredicate;
+import com.dat3m.dartagnan.solver.caat4wmm.EdgeManager;
 import com.dat3m.dartagnan.solver.caat4wmm.statistics.GlobalStatistics;
 import com.dat3m.dartagnan.solver.caat4wmm.statistics.IntermediateStatistics;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
+import com.dat3m.dartagnan.wmm.utils.TupleSetMap;
 
 import java.util.*;
 
@@ -25,15 +28,21 @@ public class Reasoner {
     private final GraphVisitor graphVisitor = new GraphVisitor();
     private final SetVisitor setVisitor = new SetVisitor();
     private final IntermediateStatistics intermediateStats;
+    private final EdgeManager edgeManager;
 
-    public Reasoner(IntermediateStatistics intermediateStats) {
+    public Reasoner(IntermediateStatistics intermediateStats, EdgeManager edgeManager) {
         this.intermediateStats = intermediateStats;
+        this.edgeManager = edgeManager;
     }
     public Reasoner() {
         this.intermediateStats = null;
+        this.edgeManager = null;
     }
     // ========================== Reason computation ==========================
 
+    public void addEagerlyEncodedEdges(TupleSetMap edges) {
+        edgeManager.addEagerlyEncodedEdges(edges);
+    }
     public DNF<CAATLiteral> computeViolationReasons(Constraint constraint) {
         if (!constraint.checkForViolations()) {
             return DNF.FALSE();
@@ -42,6 +51,7 @@ public class Reasoner {
         CAATPredicate pred = constraint.getConstrainedPredicate();
         Collection<? extends Collection<? extends Derivable>> violations = constraint.getViolations();
         List<Conjunction<CAATLiteral>> reasonList = new ArrayList<>(violations.size());
+        edgeManager.initCAATView();
 
         if (constraint instanceof AcyclicityConstraint) {
             // For acyclicity constraints, it is likely that we encounter the same
@@ -96,6 +106,10 @@ public class Reasoner {
             //GlobalStatistics.insertIntermediate(graph.getName(), edge);
             GlobalStatistics.go(graph.getName());
             intermediateStats.insert(graph.getName(), edge, cameFrom);
+        }
+
+        if (edgeManager.isEagerlyEncoded(graph.getName(), edge)) {
+            return new EdgeLiteral(graph.getName(), edge, false).toSingletonReason();
         }
 
         Conjunction<CAATLiteral> reason = graph.accept(graphVisitor, edge, cameFrom);

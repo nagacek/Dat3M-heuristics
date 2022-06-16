@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.solver.caat4wmm;
 
 
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
+import com.dat3m.dartagnan.solver.caat.misc.EdgeSetMap;
 import com.dat3m.dartagnan.solver.caat.reasoning.CAATLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreReasoner;
@@ -13,6 +14,7 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.relation.Relation;
+import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSetMap;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -47,7 +49,7 @@ public class WMMSolver {
         this.executionGraph = new ExecutionGraph(task, cutRelations, true);
         this.executionModel = new ExecutionModel(task);
         this.reasoner = new CoreReasoner(task, executionGraph);
-        this.solver = CAATSolver.create(stats);
+        this.solver = CAATSolver.create(stats, new EdgeManager(executionModel));
         this.intermediateStats = stats;
     }
 
@@ -57,6 +59,10 @@ public class WMMSolver {
 
     public ExecutionGraph getExecutionGraph() {
         return executionGraph;
+    }
+
+    public void addEagerlyEncodedEdges(TupleSetMap edges) {
+        solver.addEagerlyEncodedEdges(edges);
     }
 
     public Result check(Model model, SolverContext ctx) {

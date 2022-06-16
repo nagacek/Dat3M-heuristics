@@ -2,9 +2,11 @@ package com.dat3m.dartagnan.solver.caat;
 
 
 import com.dat3m.dartagnan.solver.caat.constraints.Constraint;
+import com.dat3m.dartagnan.solver.caat.misc.EdgeSetMap;
 import com.dat3m.dartagnan.solver.caat.misc.PathAlgorithm;
 import com.dat3m.dartagnan.solver.caat.reasoning.CAATLiteral;
 import com.dat3m.dartagnan.solver.caat.reasoning.Reasoner;
+import com.dat3m.dartagnan.solver.caat4wmm.EdgeManager;
 import com.dat3m.dartagnan.solver.caat4wmm.statistics.IntermediateStatistics;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
@@ -33,16 +35,16 @@ public class CAATSolver {
         this.reasoner = new Reasoner();
     }
 
-    private CAATSolver(IntermediateStatistics intermediateStats) {
-        this.reasoner = new Reasoner(intermediateStats);
+    private CAATSolver(IntermediateStatistics intermediateStats, EdgeManager edgeManager) {
+        this.reasoner = new Reasoner(intermediateStats, edgeManager);
     }
 
     public static CAATSolver create() {
         return new CAATSolver();
     }
 
-    public static CAATSolver create(IntermediateStatistics intermediateStats) {
-        return new CAATSolver(intermediateStats);
+    public static CAATSolver create(IntermediateStatistics intermediateStats, EdgeManager edgeManager) {
+        return new CAATSolver(intermediateStats, edgeManager);
     }
 
     // ======================================== Accessors ==============================================
@@ -50,6 +52,8 @@ public class CAATSolver {
     public Reasoner getReasoner() { return reasoner; }
 
     public Statistics getStatistics() { return stats; }
+
+    public void addEagerlyEncodedEdges(TupleSetMap edges) { reasoner.addEagerlyEncodedEdges(edges); }
 
     // ======================================== Solving ==============================================
 
