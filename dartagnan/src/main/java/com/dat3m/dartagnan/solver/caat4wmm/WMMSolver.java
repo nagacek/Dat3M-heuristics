@@ -56,7 +56,7 @@ public class WMMSolver {
         this.reasoner = new CoreReasoner(task, executionGraph, manager);
         this.solver = CAATSolver.create(stats, manager);
         this.intermediateStats = stats;
-        this.heuristic = new SimpleOccurrenceCount(task, 5, 10);
+        this.heuristic = new SimpleIterationCount(task, 5, 15);
     }
 
     public ExecutionModel getExecution() {

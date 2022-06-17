@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.encoding.SymmetryEncoder;
 import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
+import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.solver.caat4wmm.DynamicEagerEncoder;
 import com.dat3m.dartagnan.solver.caat4wmm.statistics.GlobalStatistics;
 import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
@@ -20,6 +21,7 @@ import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.axiom.ForceEncodeAxiom;
 import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
 import com.dat3m.dartagnan.wmm.relation.Relation;
@@ -27,6 +29,7 @@ import com.dat3m.dartagnan.wmm.relation.base.stat.RelCartesian;
 import com.dat3m.dartagnan.wmm.relation.base.stat.RelFencerel;
 import com.dat3m.dartagnan.wmm.relation.base.stat.RelSetIdentity;
 import com.dat3m.dartagnan.wmm.relation.binary.RelMinus;
+import com.dat3m.dartagnan.wmm.utils.RecursiveGroup;
 import com.dat3m.dartagnan.wmm.utils.RelationRepository;
 import com.dat3m.dartagnan.wmm.utils.TupleSetMap;
 import org.apache.logging.log4j.LogManager;
@@ -82,7 +85,14 @@ public class RefinementSolver {
         SymmetryEncoder symmEncoder = task.getSymmetryEncoder();
 
         IntermediateStatistics intermediateStatistics = new IntermediateStatistics();
-        task.getMemoryModel().getRelationRepository().getRelations().forEach(relation -> relation.initializeEncoding(ctx));
+
+        for (Relation rel : task.getRelationDependencyGraph().getNodeContents()) {
+            rel.initializeEncoding(ctx);
+        }
+
+        for (Axiom axiom : task.getMemoryModel().getAxioms()) {
+            axiom.initializeEncoding(ctx);
+        }
 
         Program program = task.getProgram();
         WMMSolver solver = new WMMSolver(task, cutRelations, intermediateStatistics);
