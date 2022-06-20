@@ -147,7 +147,7 @@ public class Refiner {
 
     // Changes a reasoning <literal> based on a given permutation <perm> and translates the result
     // into a BooleanFormula for Refinement.
-    private BooleanFormula permuteAndConvert(CoreLiteral literal, Function<Event, Event> perm, SolverContext context) {
+    public BooleanFormula permuteAndConvert(CoreLiteral literal, Function<Event, Event> perm, SolverContext context) {
         BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula enc;
         if (literal instanceof ExecLiteral) {

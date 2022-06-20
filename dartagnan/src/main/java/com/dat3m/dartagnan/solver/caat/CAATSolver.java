@@ -1,19 +1,15 @@
 package com.dat3m.dartagnan.solver.caat;
 
 
-import com.dat3m.dartagnan.solver.caat.constraints.AcyclicityConstraint;
 import com.dat3m.dartagnan.solver.caat.constraints.Constraint;
 import com.dat3m.dartagnan.solver.caat.misc.PathAlgorithm;
-import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.solver.caat.reasoning.CAATLiteral;
 import com.dat3m.dartagnan.solver.caat.reasoning.Reasoner;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.CONSISTENT;
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.INCONSISTENT;
@@ -77,12 +73,7 @@ public class CAATSolver {
         if (status == INCONSISTENT) {
             // ============== Compute reasons ===============
             curTime = System.currentTimeMillis();
-
-            // Test code
-            Map<Constraint, Map<Edge, Conjunction<CAATLiteral>>> cycleEdgeReasonsMap = new HashMap<>();
-            result.setBaseReasons(computeInconsistencyReasons(violatedConstraints, cycleEdgeReasonsMap));
-            result.setCycleEdgeReasonsMap(cycleEdgeReasonsMap);
-
+            result.setBaseReasons(computeInconsistencyReasons(violatedConstraints));
             stats.reasonComputationTime += (System.currentTimeMillis() - curTime);
         }
 
@@ -91,19 +82,9 @@ public class CAATSolver {
 
     // ======================================== Reason computation ==============================================
 
-    private DNF<CAATLiteral> computeInconsistencyReasons(List<Constraint> violatedConstraints, Map<Constraint, Map<Edge, Conjunction<CAATLiteral>>> cycleEdgeReasonsMap) {
+    private DNF<CAATLiteral> computeInconsistencyReasons(List<Constraint> violatedConstraints) {
         List<Conjunction<CAATLiteral>> reasons = new ArrayList<>();
         for (Constraint constraint : violatedConstraints) {
-            if (constraint instanceof AcyclicityConstraint) {
-                Map<Edge, Conjunction<CAATLiteral>> reasonMap = new HashMap<>();
-                List<List<Edge>> violations = ((AcyclicityConstraint)constraint).getViolations();
-                for (List<Edge> vio : violations) {
-                    for (Edge edge : vio) {
-                        reasonMap.computeIfAbsent(edge, key -> reasoner.computeReason(constraint.getConstrainedPredicate(), key));
-                    }
-                }
-                cycleEdgeReasonsMap.put(constraint, reasonMap);
-            }
             reasons.addAll(reasoner.computeViolationReasons(constraint).getCubes());
         }
         stats.numComputedReasons += reasons.size();
@@ -119,19 +100,14 @@ public class CAATSolver {
         private Status status;
         private DNF<CAATLiteral> baseReasons;
         private final Statistics stats;
-        private Map<Constraint, Map<Edge, Conjunction<CAATLiteral>>> cycleEdgeReasonsMap;
 
         public Status getStatus() { return status; }
         public DNF<CAATLiteral> getBaseReasons() { return baseReasons; }
-        public Map<Constraint, Map<Edge, Conjunction<CAATLiteral>>> getCycleEdgeReasons() { return cycleEdgeReasonsMap; }
         public Statistics getStatistics() { return stats; }
 
         void setStatus(Status status) { this.status = status; }
         void setBaseReasons(DNF<CAATLiteral> reasons) {
             this.baseReasons = reasons;
-        }
-        void setCycleEdgeReasonsMap(Map<Constraint, Map<Edge, Conjunction<CAATLiteral>>> cycleEdgeReasons) {
-            this.cycleEdgeReasonsMap = cycleEdgeReasons;
         }
 
         public Result() {
