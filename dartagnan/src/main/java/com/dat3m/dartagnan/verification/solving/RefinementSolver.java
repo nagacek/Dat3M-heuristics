@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.RelLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.statistics.IntermediateStatistics;
 import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.RefinementTask;
@@ -35,11 +36,7 @@ import com.dat3m.dartagnan.wmm.utils.TupleSetMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.Model;
-import org.sosy_lab.java_smt.api.ProverEnvironment;
-import org.sosy_lab.java_smt.api.SolverContext;
-import org.sosy_lab.java_smt.api.SolverException;
+import org.sosy_lab.java_smt.api.*;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -86,6 +83,10 @@ public class RefinementSolver {
 
         IntermediateStatistics intermediateStatistics = new IntermediateStatistics();
 
+        for(RecursiveGroup recursiveGroup : task.getMemoryModel().getRecursiveGroups()){
+            recursiveGroup.setDoRecurse();
+        }
+
         for (Relation rel : task.getRelationDependencyGraph().getNodeContents()) {
             rel.initializeEncoding(ctx);
         }
@@ -124,6 +125,9 @@ public class RefinementSolver {
         solver.initializeGlobalStats();
         //  ---------------------------------
 
+        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        BooleanFormula allEagerEdges = bmgr.makeTrue();
+
         logger.info("Refinement procedure started.");
         while (!prover.isUnsat()) {
         	if(iterationCount == 0 && logger.isDebugEnabled()) {
@@ -154,7 +158,7 @@ public class RefinementSolver {
             statList.add(stats);
             logger.debug("Refinement iteration:\n{}", stats);
 
-            RelationRepository rels = task.getMemoryModel().getRelationRepository();
+            DependencyGraph<Relation> rels = task.getRelationDependencyGraph();
 
             status = solverResult.getStatus();
             if (status == INCONSISTENT) {
@@ -164,6 +168,7 @@ public class RefinementSolver {
 
                 TupleSetMap encodedEdges = DynamicEagerEncoder.determineEncodedTuples(solverResult.getHotEdges(), rels);
                 BooleanFormula eagerly = DynamicEagerEncoder.encodeEagerly(encodedEdges, rels, ctx);
+                allEagerEdges = bmgr.and(allEagerEdges, eagerly);
                 prover.addConstraint(eagerly);
                 solver.addEagerlyEncodedEdges(encodedEdges);
 
