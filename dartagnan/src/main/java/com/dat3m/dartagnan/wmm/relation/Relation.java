@@ -126,6 +126,10 @@ public abstract class Relation implements Encoder, Dependent<Relation> {
         }
     }
 
+    public float getWeight() {
+        return 1f;
+    }
+
     public String getName() {
         return name != null ? name : term;
     }

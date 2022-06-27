@@ -116,6 +116,14 @@ public class RelComposition extends BinaryRelation {
     }
 
     @Override
+    public float getWeight() {
+        if (weight < 0) {
+            weight = r1.getWeight() + r2.getWeight() + 4f;
+        }
+        return weight;
+    }
+
+    @Override
     protected BooleanFormula encodeApprox(SolverContext ctx) {
     	return encodeApprox(ctx, encodeTupleSet);
     }

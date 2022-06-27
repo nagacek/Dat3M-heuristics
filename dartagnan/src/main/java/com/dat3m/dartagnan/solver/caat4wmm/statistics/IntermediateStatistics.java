@@ -23,6 +23,7 @@ public class IntermediateStatistics {
     private final HotMap<List<Event>> iterationsWOMemoized;
     private HotMap<List<Event>> metric;
     private final HashMap<Tuple, ArrayList<ReasonElement>> computedRelations;
+    private final HashMap<String, UpdatableValue<Float>> reuseCount;
     private EventDomain domain;
     private int iterationCounter;
 
@@ -33,6 +34,7 @@ public class IntermediateStatistics {
         computedRelations = new HashMap<>();
         iterationsWOMemoized = new HotMap<>();
         metric = new HotMap<>();
+        reuseCount = new HashMap<>();
         iterationCounter = 1;
     }
 
@@ -51,6 +53,9 @@ public class IntermediateStatistics {
         iterationsWOMemoized.update();
         metric = edges.per(iterations, iterationCounter);
         computedRelations.clear();
+        for (var entry : reuseCount.entrySet()) {
+            entry.getValue().update();
+        }
         iterationCounter++;
     }
 
@@ -102,6 +107,13 @@ public class IntermediateStatistics {
         } else {
             return null;
         }
+    }
+
+    public void reused(String name) {
+        if (!reuseCount.containsKey(name)) {
+            reuseCount.put(name, new UpdatableValue<Float>(0f));
+        }
+        reuseCount.get(name).setCurrent(reuseCount.get(name).current() + 1);
     }
 
     private void saveForLater(String name, List<Event> list, Derivable cameFrom) {
@@ -171,6 +183,9 @@ public class IntermediateStatistics {
             str.append("\n\nHot intermediates by #edges * #occ. iterations / #iterations:");
             str.append(metric.toString(listString));
         }
+
+        str.append("\n\n\n ---------- Reused Edges ---------- \n");
+        str.append(stringMapToString(reuseCount));
         str.append("\n");
         return str.toString();
     }
@@ -200,6 +215,19 @@ public class IntermediateStatistics {
             float difference = current - sorted.get(i).getValue().was();
             str.append("\n").append(sorted.get(i).getKey()).append(": ");
             str.append((int)current).append(" (+").append((int)difference).append(")");
+        }
+        str.append("\n");
+        return str.toString();
+    }
+
+    private String stringIntMapToString(HashMap<String, Integer> map) {
+        StringBuilder str = new StringBuilder();
+        ArrayList<Map.Entry<String, Integer>> sorted = new ArrayList<>(map.entrySet());
+        sorted.sort((entry1, entry2) -> entry2.getValue().compareTo(entry1.getValue()));
+        for (int i = 0; i < Math.min(GlobalStatistics.MAX_HOTNESS, sorted.size()); i++) {
+            float current = sorted.get(i).getValue();
+            str.append("\n").append(sorted.get(i).getKey()).append(": ");
+            str.append((int)current);
         }
         str.append("\n");
         return str.toString();

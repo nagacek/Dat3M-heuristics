@@ -2,10 +2,7 @@ package com.dat3m.dartagnan.solver.caat4wmm.statistics;
 
 import com.dat3m.dartagnan.utils.collections.UpdatableValue;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -149,15 +146,19 @@ public class HotMap <T>{
         }
     }
 
-    public ArrayList<Map.Entry<String, Map.Entry<T, UpdatableValue<Float>>>> sort() {
+    public ArrayList<Map.Entry<String, Map.Entry<T, UpdatableValue<Float>>>> sort(Comparator<Map.Entry<String, Map.Entry<T, UpdatableValue<Float>>>> comp) {
         ArrayList<Map.Entry<String, Map.Entry<T, UpdatableValue<Float>>>> sorted = new ArrayList<>();
         for (var relation : map.keySet()) {
             for (var edge : map.get(relation).entrySet()){
                 sorted.add(Map.entry(relation, edge));
             }
         }
-        sorted.sort((obj1, obj2) -> obj2.getValue().getValue().current().compareTo(obj1.getValue().getValue().current()));
+        sorted.sort(comp);
         return sorted;
+    }
+
+    public ArrayList<Map.Entry<String, Map.Entry<T, UpdatableValue<Float>>>> sort() {
+        return sort((obj1, obj2) -> obj2.getValue().getValue().current().compareTo(obj1.getValue().getValue().current()));
     }
 
     public String toString(Function<T, String> func) {

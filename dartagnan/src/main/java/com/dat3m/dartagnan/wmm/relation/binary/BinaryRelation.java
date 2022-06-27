@@ -20,6 +20,8 @@ public abstract class BinaryRelation extends Relation {
     protected Relation r1;
     protected Relation r2;
 
+    protected float weight = -1f;
+
     BinaryRelation(Relation r1, Relation r2) {
         this.r1 = r1;
         this.r2 = r2;
@@ -70,6 +72,14 @@ public abstract class BinaryRelation extends Relation {
         }
 
         return map;
+    }
+
+    @Override
+    public float getWeight() {
+        if (weight < 0) {
+            weight = (r1.getWeight() + r2.getWeight()) / 2.2f;
+        }
+        return weight;
     }
 
     @Override

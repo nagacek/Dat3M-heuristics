@@ -19,6 +19,10 @@ public class RecursiveRelation extends Relation {
     private Relation r1;
     private boolean doRecurse = false;
 
+    private boolean weightRecursion = true;
+
+    private float weight = -1f;
+
     public Relation getInner() {
         return r1;
     }
@@ -121,6 +125,16 @@ public class RecursiveRelation extends Relation {
         difference.removeAll(oldEncodeSet);
 
         return map;
+    }
+
+    @Override
+    public float getWeight() {
+        if (weightRecursion && weight < 0) {
+            weightRecursion = false;
+            weight = r1.getWeight();
+            weightRecursion = true;
+        }
+        return weight;
     }
 
     @Override

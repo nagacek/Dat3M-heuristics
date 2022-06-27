@@ -109,6 +109,7 @@ public class Reasoner {
         }
 
         if (edgeManager.isEagerlyEncoded(graph.getName(), edge)) {
+            intermediateStats.reused(graph.getName());
             return new EdgeLiteral(graph.getName(), edge, false).toSingletonReason();
         }
 
