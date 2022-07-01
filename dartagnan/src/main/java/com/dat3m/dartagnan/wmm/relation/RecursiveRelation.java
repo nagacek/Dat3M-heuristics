@@ -132,7 +132,9 @@ public class RecursiveRelation extends Relation {
         if (weightRecursion && weight < 0) {
             weightRecursion = false;
             weight = r1.getWeight();
-            weightRecursion = true;
+        }
+        if (weight < 0) {
+            return 1f;
         }
         return weight;
     }
