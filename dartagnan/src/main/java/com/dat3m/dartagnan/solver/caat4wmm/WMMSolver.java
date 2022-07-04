@@ -71,7 +71,7 @@ public class WMMSolver {
                 coreReasons.add(reasoner.toCoreReason(baseReason));
             }
 
-            computeViolatingCycles(result);
+            computeViolatingCycles(result); // Test code to compute cycle reasons
 
             stats.numComputedCoreReasons = coreReasons.size();
             result.coreReasons = new DNF<>(coreReasons);
@@ -83,6 +83,9 @@ public class WMMSolver {
     }
 
     private void computeViolatingCycles(Result result) {
+        // To avoid changing the code of CAATSolver,
+        // we simply recompute all cycles and their reasons again
+        // This is sufficient for testing.
         EventDomain dom = executionGraph.getDomain();
         Reasoner baseReasoner = solver.getReasoner();
         for (Map.Entry<Axiom, Constraint> axConstr : executionGraph.getAxiomConstraintMap().entrySet()) {
@@ -109,6 +112,8 @@ public class WMMSolver {
         }
 
         // ----- Temporary test code -----
+        // This code aggregates all edge-reasons into a single map
+        // This is not needed, but some older testing code relied on such a map
         for (Map.Entry<Axiom, List<ViolatingCycle>> cycles : result.violatingCycles.entrySet()) {
             Map<Tuple, Conjunction<CoreLiteral>> combinedEdgeReasons = new HashMap<>();
             for (ViolatingCycle cycle : cycles.getValue()) {
@@ -124,6 +129,7 @@ public class WMMSolver {
     public static class Result {
         private CAATSolver.Status status;
         private DNF<CoreLiteral> coreReasons;
+        // Obsolete, since the map can be computed from the cycles.
         private Map<Axiom, Map<Tuple, Conjunction<CoreLiteral>>> cycleEdgeReasonsMap;
         private Map<Axiom, List<ViolatingCycle>> violatingCycles;
         private Statistics stats;

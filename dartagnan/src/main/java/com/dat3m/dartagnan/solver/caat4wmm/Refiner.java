@@ -78,6 +78,8 @@ public class Refiner {
         return refinement;
     }
 
+    // Given an axiom <ax> and a map [edge -> reason], encodes the formulas "reason((e1, e2)) => c(e1) < c(e2)",
+    // that is, we use IDL instead of SAT to encode acyclicity
     public BooleanFormula refineAcyclicity(Axiom ax, Map<Tuple, Conjunction<CoreLiteral>> reasonMap, SolverContext context) {
         BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
         IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();

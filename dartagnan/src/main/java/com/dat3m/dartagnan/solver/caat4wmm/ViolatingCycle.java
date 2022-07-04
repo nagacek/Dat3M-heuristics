@@ -8,6 +8,8 @@ import com.dat3m.dartagnan.wmm.utils.Tuple;
 import java.util.List;
 import java.util.Map;
 
+// Representation of a cycle that violates an axiom, including the reasons from
+// which each edge can be derived.
 public class ViolatingCycle {
 
     private final Acyclic axiom;

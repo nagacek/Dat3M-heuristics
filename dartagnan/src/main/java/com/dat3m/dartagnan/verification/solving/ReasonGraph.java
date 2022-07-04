@@ -17,15 +17,21 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+// A simple class that represents a graph with edges annotated by reasons from which the edge was derived
+// - The Graph is stored as a map from nodes (=events) to their incident edges
+// - The reasons are stored as a map from edges to DNFs
+// Right now, this class also uses a Refiner to generate encodings (i.e. translate (parts) of the Graph into a formula)
 public class ReasonGraph {
 
     private Acyclic axiom;
     private Refiner refiner;
-
     private Map<Event, List<Tuple>> outEdges = new HashMap<>();
     private Map<Event, List<Tuple>> inEdges = new HashMap<>();
     private Map<Tuple, DNF<CoreLiteral>> reasonMap = new HashMap<>();
 
+    // This is some testing code to keep track over which cycles were explicitly added,
+    // which cycles are not need encoded and which newly found reasons for edges
+    // are not yet encoded (if encoding of cycles/derivations should take place).
     private Set<List<Tuple>> encounteredCycles = new HashSet<>();
     private List<List<Tuple>> newCyclesToBeEncoded = new ArrayList<>();
     private Map<Tuple, Conjunction<CoreLiteral>> derivationToBeEncoded = new HashMap<>();
@@ -38,12 +44,13 @@ public class ReasonGraph {
     public Acyclic getAxiom() { return axiom;}
 
     // --------------- Test code ------------------
+    // Add a violating cycle and return if new reasons have been found (or a new cycle)
     public boolean addCycle(ViolatingCycle vio) {
         List<Tuple> cycle = vio.getCycle();
         boolean changes = false;
         if (encounteredCycles.add(cycle)) {
             newCyclesToBeEncoded.add(cycle);
-            //changes = true;
+            //changes = true; // Test code
         }
 
         for (Tuple edge : cycle) {
@@ -56,16 +63,19 @@ public class ReasonGraph {
         return changes;
     }
 
+    // Encodes all changes (newly found cycles and newly found reasons) into a formula
     public BooleanFormula encodeChanges(SolverContext ctx) {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         Relation rel = axiom.getRelation();
         BooleanFormula enc = bmgr.makeTrue();
 
+        // Update derivations
         for (Tuple edge : derivationToBeEncoded.keySet()) {
             Conjunction<CoreLiteral> reason = derivationToBeEncoded.get(edge);
             enc = bmgr.and(enc, bmgr.implication(clause2Formulas(reason, ctx), rel.getSMTVar(edge, ctx)));
         }
 
+        // Encode new cycles (concretely, encode formula that disallows these cycles)
         for (List<Tuple> cycle : newCyclesToBeEncoded) {
             BooleanFormula noCycleFormula = cycle.stream().map(edge -> bmgr.not(rel.getSMTVar(edge, ctx)))
                     .reduce(bmgr.makeFalse(), bmgr::or);
@@ -78,13 +88,14 @@ public class ReasonGraph {
 
     // ------------------------------------------
 
+    // Returns the list of edges ordered by the number of reasons they have (a lot of reasons = hot?!)
     public List<Map.Entry<Tuple, DNF<CoreLiteral>>> getHotnessList() {
         List<Map.Entry<Tuple, DNF<CoreLiteral>>> edgeReasons = new ArrayList<>(reasonMap.entrySet());
         edgeReasons.sort(Comparator.comparingInt(x -> -x.getValue().getNumberOfCubes()));
         return edgeReasons;
     }
 
-
+    // Add new edge with a single reason. Returns true, if the reason is new (or the edge itself is new)
     public boolean addReason(Tuple edge, Conjunction<CoreLiteral> reason) {
         DNF<CoreLiteral> existingReasons = reasonMap.get(edge);
         if (existingReasons == null) {
@@ -104,6 +115,8 @@ public class ReasonGraph {
     }
 
 
+    // Test code that tries to encode short cycles in the reason graph, but it is highly stupid
+    // and ends up encoding cycles of length 2 that can never happen (e.g. cycles with 2 opposing coherences)
     public BooleanFormula encodeShortestCycles(SolverContext ctx) {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeFalse();
@@ -148,6 +161,8 @@ public class ReasonGraph {
         return formula;
     }
 
+
+    // ========== Copy of the Shortest Path Algorithm code used in CAAT ===========
     private final Queue<Event> queue1 = new ArrayDeque<>();
     private final Queue<Event> queue2 = new ArrayDeque<>();
     private final Map<Event, Tuple> parentMap1 = new HashMap<>();

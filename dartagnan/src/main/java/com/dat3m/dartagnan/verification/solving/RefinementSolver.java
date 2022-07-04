@@ -159,8 +159,8 @@ public class RefinementSolver {
                 totalRefiningTime += (System.currentTimeMillis() - refineTime);
 
 
-                // Other test code
-
+                // Some test code that keeps statistics of newly found cycles
+                // + encodes the reason graph (potentially)
                 for (Axiom ax : solverResult.getViolatingCycles().keySet()) {
                     List<ViolatingCycle> cycles = solverResult.getViolatingCycles().get(ax);
                     ReasonGraph g = reasonGraphList.stream().filter(graph -> graph.getAxiom() == ax).findFirst().get();
@@ -173,7 +173,7 @@ public class RefinementSolver {
                     //prover.addConstraint(g.encodeChanges(ctx));
                 }
 
-                // Test code
+                // Some other test code...
                 /*for (Axiom ax : solverResult.getCycleEdgeReasons().keySet()) {
                     ReasonGraph g = reasonGraphList.stream().filter(graph -> graph.getAxiom() == ax).findFirst().get();
                     for (Map.Entry<Tuple, Conjunction<CoreLiteral>> entry : solverResult.getCycleEdgeReasons().get(ax).entrySet()) {
@@ -183,6 +183,7 @@ public class RefinementSolver {
                         }
                     }
                     if (iterationCount % 10 == 0) {
+                        // Some statistics stuff
                         //logger.info("Extrapolating reasons.");
                         //prover.addConstraint(g.encodeShortestCycles(ctx));
 
@@ -195,6 +196,9 @@ public class RefinementSolver {
                         });
                         logger.info("Hotness status:\n" + report);
                     }
+
+
+                    // Encode the whole reason graph via acyclicity constraints using IDL
                     //prover.addConstraint(refiner.refineAcyclicity(ax, solverResult.getCycleEdgeReasons().get(ax), ctx));
                 }*/
 
