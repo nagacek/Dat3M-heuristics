@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.solver.caat4wmm.statistics.HotMap;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.relation.Relation;
+import com.dat3m.dartagnan.wmm.relation.unary.RelTransRef;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
 import com.dat3m.dartagnan.wmm.utils.TupleSetMap;
@@ -42,10 +43,14 @@ public class WeightedRelations extends EagerEncodingHeuristic {
             return Float.compare(obj2Compare, obj1Compare);
         });
         TupleSetMap chosenEdges = new TupleSetMap();
-        for (int i = 0; i < strength && i < sorted.size(); i++) {
+        int bound = strength;
+        for (int i = 0; i < bound && i < sorted.size(); i++) {
             var value = sorted.get(i);
-            if (!isBase(value.getKey()) && value.getValue().getKey().size() == 2) {
+            if (!isBase(value.getKey()) && value.getValue().getKey().size() == 2 && !(getRelationByName(value.getKey()) instanceof RelTransRef)){
+                    //&& !getRelationByName(value.getKey()).getEncodeTupleSet().contains(new Tuple(value.getValue().getKey().get(0), value.getValue().getKey().get(1)))) {
                 chosenEdges.merge(new TupleSetMap(value.getKey(), new TupleSet(Arrays.asList(new Tuple(value.getValue().getKey().get(0), value.getValue().getKey().get(1))))));
+            } else {
+                bound++;
             }
         }
         return chosenEdges;

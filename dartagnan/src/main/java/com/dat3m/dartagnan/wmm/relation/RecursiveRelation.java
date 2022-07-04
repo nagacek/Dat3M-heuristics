@@ -20,8 +20,7 @@ public class RecursiveRelation extends Relation {
     private boolean doRecurse = false;
 
     private boolean weightRecursion = true;
-
-    private float weight = -1f;
+    private int initialAmount;
 
     public Relation getInner() {
         return r1;
@@ -128,16 +127,18 @@ public class RecursiveRelation extends Relation {
     }
 
     @Override
-    public float getWeight() {
-        if (weightRecursion && weight < 0) {
+    public void incrementWeight(int amount) {
+        if (weightRecursion) {
             weightRecursion = false;
-            weight = r1.getWeight();
+            initialAmount = amount;
+            weight += amount;
+            r1.incrementWeight(amount);
+        } else {
+            weight += amount - initialAmount;
         }
-        if (weight < 0) {
-            return 1f;
-        }
-        return weight;
     }
+
+    public void setWeightRecursion() { weightRecursion = true; }
 
     @Override
     public int updateRecursiveGroupId(int parentId){

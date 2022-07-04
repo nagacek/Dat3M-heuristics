@@ -116,11 +116,10 @@ public class RelComposition extends BinaryRelation {
     }
 
     @Override
-    public float getWeight() {
-        if (weight < 0) {
-            weight = r1.getWeight() + r2.getWeight() + 4f;
-        }
-        return weight;
+    public void incrementWeight(int amount) {
+        weight += amount;
+        r1.incrementWeight(amount + 1);
+        r2.incrementWeight(amount + 1);
     }
 
     @Override

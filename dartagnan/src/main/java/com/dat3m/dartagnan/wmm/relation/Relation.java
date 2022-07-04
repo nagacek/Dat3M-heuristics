@@ -52,6 +52,7 @@ public abstract class Relation implements Encoder, Dependent<Relation> {
     protected boolean forceUpdateRecursiveGroupId = false;
     protected boolean isRecursive = false;
     protected boolean forceDoEncode = false;
+    protected int weight = 1;
 
     public Relation() { }
 
@@ -127,8 +128,14 @@ public abstract class Relation implements Encoder, Dependent<Relation> {
     }
 
     public float getWeight() {
-        return 1f;
+        return weight;
     }
+
+    public void incrementWeight(int amount) {
+        weight += amount;
+    }
+
+    public void setWeightRecursion() {}
 
     public String getName() {
         return name != null ? name : term;

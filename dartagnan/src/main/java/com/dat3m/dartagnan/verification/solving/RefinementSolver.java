@@ -89,11 +89,15 @@ public class RefinementSolver {
 
         for (Relation rel : task.getRelationDependencyGraph().getNodeContents()) {
             rel.initializeEncoding(ctx);
-            rel.getWeight();
+            //rel.getWeight();
         }
 
         for (Axiom axiom : task.getMemoryModel().getAxioms()) {
             axiom.initializeEncoding(ctx);
+            axiom.getRelation().incrementWeight(0);
+            for (Relation rel : task.getRelationDependencyGraph().getNodeContents()) {
+                rel.setWeightRecursion();
+            }
         }
 
         Program program = task.getProgram();
@@ -166,7 +170,6 @@ public class RefinementSolver {
                 DNF<CoreLiteral> reasons = solverResult.getCoreReasons();
                 foundCoreReasons.add(reasons);
                 prover.addConstraint(refiner.refine(reasons, ctx));
-
                 TupleSetMap encodedEdges = DynamicEagerEncoder.determineEncodedTuples(solverResult.getHotEdges(), rels);
                 BooleanFormula eagerly = DynamicEagerEncoder.encodeEagerly(encodedEdges, rels, ctx);
                 allEagerEdges = bmgr.and(allEagerEdges, eagerly);
