@@ -195,7 +195,7 @@ public class RefinementSolver {
                         message.append(intermediateStatistics);
                         GlobalStatistics.newIteration();
                         intermediateStatistics.update();
-                        message.append("\n\n\n\n\nChose edge").append(solverResult.getHotEdges());
+                        message.append("\n\n\n\n\nChose edge\n").append(solverResult.getHotEdges());
                         message.append("\n\nAffected edges\n").append(encodedEdges);
                         logger.trace(message);
                     }
