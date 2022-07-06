@@ -134,7 +134,6 @@ public class RefinementSolver {
         solver.initializeGlobalStats();
         //  ---------------------------------
 
-        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula allEagerEdges = bmgr.makeTrue();
 
         logger.info("Refinement procedure started.");
