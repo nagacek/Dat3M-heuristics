@@ -26,6 +26,19 @@ public class IntermediateStatistics {
     private final HashMap<String, UpdatableValue<Float>> reuseCount;
     private EventDomain domain;
     private int iterationCounter;
+    private final int relearn;
+
+    public IntermediateStatistics(int relearn) {
+        edges = new HotMap<>();
+        edgesWOMemoized = new HotMap<>();
+        iterations = new HotMap<>();
+        computedRelations = new HashMap<>();
+        iterationsWOMemoized = new HotMap<>();
+        metric = new HotMap<>();
+        reuseCount = new HashMap<>();
+        iterationCounter = 1;
+        this.relearn = relearn;
+    }
 
     public IntermediateStatistics() {
         edges = new HotMap<>();
@@ -36,6 +49,7 @@ public class IntermediateStatistics {
         metric = new HotMap<>();
         reuseCount = new HashMap<>();
         iterationCounter = 1;
+        relearn = 0;
     }
 
     public TupleSetMap computeHotEdges(EagerEncodingHeuristic method) {
@@ -48,10 +62,17 @@ public class IntermediateStatistics {
 
     public void update() {
         edges.update();
-        edgesWOMemoized.update();
-        iterations.update();
-        iterationsWOMemoized.update();
-        metric = edges.per(iterations, iterationCounter);
+        //edgesWOMemoized.update();
+        //iterations.update();
+        //iterationsWOMemoized.update();
+        //metric = edges.per(iterations, iterationCounter);
+        if (relearn != 0 && iterationCounter % relearn == 0) {
+            edges.clear();
+            //edgesWOMemoized.clear();
+            //iterations.clear();
+            //iterationsWOMemoized.clear();
+            iterationCounter = 0;
+        }
         computedRelations.clear();
         for (var entry : reuseCount.entrySet()) {
             entry.getValue().update();
@@ -68,9 +89,9 @@ public class IntermediateStatistics {
             }
             List<Event> edge = Arrays.asList(e1, e2);
             edges.insertAndCount(name, edge);
-            edgesWOMemoized.insertAndCount(name, edge);
-            iterations.insertAndCount(name, edge, true);
-            iterationsWOMemoized.insertAndCount(name, edge, true);
+            //edgesWOMemoized.insertAndCount(name, edge);
+            //iterations.insertAndCount(name, edge, true);
+            //iterationsWOMemoized.insertAndCount(name, edge, true);
 
             saveForLater(name, edge, cameFrom);
         } else if (der instanceof Element) {
@@ -80,9 +101,9 @@ public class IntermediateStatistics {
             }
             List<Event> event = Collections.singletonList(e1);
             edges.insertAndCount(name, event);
-            edgesWOMemoized.insertAndCount(name, event);
-            iterations.insertAndCount(name, event, true);
-            iterationsWOMemoized.insertAndCount(name, event, true);
+            //edgesWOMemoized.insertAndCount(name, event);
+            //iterations.insertAndCount(name, event, true);
+            //iterationsWOMemoized.insertAndCount(name, event, true);
 
             saveForLater(name, event, cameFrom);
         }
@@ -94,7 +115,7 @@ public class IntermediateStatistics {
             if (computedRelations.containsKey(edge)) {
                 for (ReasonElement el : computedRelations.get(edge)) {
                     edges.insertAndCount(el.getName(), el.getEvents());
-                    iterations.insertAndCount(el.getName(), el.getEvents(), true);
+                    //iterations.insertAndCount(el.getName(), el.getEvents(), true);
                 }
             }
         }

@@ -21,6 +21,10 @@ public class HotMap <T>{
         map = new HashMap<>();
     }
 
+    public void clear() {
+        map.clear();
+    }
+
     public void insertAndCount(String name, T argument) {
         insertAndCount(name, argument, false);
     }

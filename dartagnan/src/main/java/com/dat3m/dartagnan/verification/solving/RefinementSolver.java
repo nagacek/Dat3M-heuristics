@@ -81,7 +81,7 @@ public class RefinementSolver {
         WmmEncoder baselineEncoder = task.getBaselineWmmEncoder();
         SymmetryEncoder symmEncoder = task.getSymmetryEncoder();
 
-        IntermediateStatistics intermediateStatistics = new IntermediateStatistics();
+        IntermediateStatistics intermediateStatistics = new IntermediateStatistics(60);
 
         for(RecursiveGroup recursiveGroup : task.getMemoryModel().getRecursiveGroups()){
             recursiveGroup.setDoRecurse();
@@ -190,9 +190,9 @@ public class RefinementSolver {
 
                     // Statistics in global environment
                     if (GlobalStatistics.globalStats) {
-                        message = new StringBuilder().append("Hot edges in global view:");
-                        message.append(GlobalStatistics.print());
-                        message.append(intermediateStatistics);
+                        //message = new StringBuilder().append("Hot edges in global view:");
+                        //message.append(GlobalStatistics.print());
+                        //message.append(intermediateStatistics);
                         GlobalStatistics.newIteration();
                         intermediateStatistics.update();
                         message.append("\n\n\n\n\nChose edge\n").append(solverResult.getHotEdges());
