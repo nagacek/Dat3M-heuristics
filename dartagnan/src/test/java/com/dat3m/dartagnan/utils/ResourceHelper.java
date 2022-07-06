@@ -1,9 +1,12 @@
 package com.dat3m.dartagnan.utils;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 import java.io.*;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
@@ -15,10 +18,11 @@ public class ResourceHelper {
     public static final String TEST_RESOURCE_PATH = "src/test/resources/";
 
     private static ImmutableMap<String, Result> expectedResults;
+    private static ImmutableSet<String> skipSet;
 
-    public static ImmutableMap<String, Result> getExpectedResults() throws IOException {
+    public static ImmutableMap<String, Result> getExpectedResults(String arch) throws IOException {
         if(expectedResults == null){
-            try (BufferedReader reader = new BufferedReader(new FileReader(TEST_RESOURCE_PATH + "dartagnan-expected.csv"))) {
+            try (BufferedReader reader = new BufferedReader(new FileReader(TEST_RESOURCE_PATH + arch + "-expected.csv"))) {
                 HashMap<String, Result> data = new HashMap<>();
                 String str;
                 while((str = reader.readLine()) != null){
@@ -31,6 +35,23 @@ public class ResourceHelper {
             }
         }
         return expectedResults;
+    }
+
+    public static ImmutableSet<String> getSkipSet() throws IOException {
+        if(skipSet == null){
+            try (BufferedReader reader = new BufferedReader(new FileReader(TEST_RESOURCE_PATH + "dartagnan-skip.csv"))) {
+                Set<String> data = new HashSet<>();
+                String str;
+                while((str = reader.readLine()) != null){
+                	if(str.contains("//") || str.isBlank()) {
+                		continue;
+                	}
+                	data.add(LITMUS_RESOURCE_PATH + str);
+                }
+                skipSet = ImmutableSet.copyOf(data);
+            }
+        }
+        return skipSet;
     }
 
     public static Result readExpected(String filepath, String property) {
@@ -63,6 +84,6 @@ public class ResourceHelper {
         int dirIndex = name.lastIndexOf("/");
         String dirPrefix = dirIndex == -1 ? "" : name.substring(0, dirIndex + 1);
         String fileName = dirIndex == -1 ? name : name.substring(dirIndex + 1);
-        return String.format("%s/output/%s%s-%s.csv", System.getenv("DAT3M_HOME"), dirPrefix, testingClass.getSimpleName(), fileName);
+        return String.format("%s/%s%s-%s.csv", System.getenv("DAT3M_OUTPUT"), dirPrefix, testingClass.getSimpleName(), fileName);
     }
 }

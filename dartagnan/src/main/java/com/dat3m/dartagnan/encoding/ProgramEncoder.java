@@ -107,6 +107,7 @@ public class ProgramEncoder implements Encoder {
                 encodeMemory(ctx),
                 encodeControlFlow(ctx),
                 encodeFinalRegisterValues(ctx),
+                encodeFilter(ctx),
                 encodeDependencies(ctx));
     }
 
@@ -257,7 +258,7 @@ public class ProgramEncoder implements Encoder {
                     assert writer instanceof RegWriter;
                     BooleanFormula edge;
                     if(state.must.contains(writer)) {
-                        edge = writer.exec();
+                        edge = bmgr.and(writer.exec(), reader.cf());
                     } else {
                         edge = dependencyEdgeVariable(writer, reader, bmgr);
                         enc = bmgr.and(enc, bmgr.equivalence(edge, bmgr.and(writer.exec(), reader.cf(), bmgr.not(overwrite))));
@@ -273,6 +274,12 @@ public class ProgramEncoder implements Encoder {
         return enc;
     }
 
+    public BooleanFormula encodeFilter(SolverContext ctx) {
+    	return program.getAssFilter() != null ? 
+    			program.getAssFilter().encode(ctx) :
+    			ctx.getFormulaManager().getBooleanFormulaManager().makeTrue();
+    }
+    
     public BooleanFormula encodeFinalRegisterValues(SolverContext ctx) {
         checkInitialized();
         logger.info("Encoding final register values");

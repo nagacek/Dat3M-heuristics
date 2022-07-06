@@ -17,7 +17,7 @@ public abstract class BaseOptions {
     	name = PROPERTY,
     	description = "The property to check for: reachability (default), liveness, races.",
     	toUppercase=true)
-    private EnumSet<Property> property = EnumSet.of(Property.getDefault());
+    private EnumSet<Property> property = Property.getDefault();
 
 	public EnumSet<Property> getProperty() { return property; }
 
@@ -62,7 +62,7 @@ public abstract class BaseOptions {
 
 	@Option(
 		name=WITNESS_GRAPHVIZ,
-		description="Generates a violation graph in /output.")
+		description="Generates a violation graph in $DAT3M_OUTPUT.")
 	private boolean generateGraphviz = false;
 		
 	public boolean generateGraphviz() { return generateGraphviz; }

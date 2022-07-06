@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.verification.solving.*;
 import com.dat3m.dartagnan.witness.WitnessBuilder;
 import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.google.common.collect.ImmutableSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -158,25 +159,33 @@ public class Dartagnan extends BaseOptions {
                 	ExecutionModel m = new ExecutionModel(task);
                 	m.initialize(prover.getModel(), ctx);
     				String name = task.getProgram().getName().substring(0, task.getProgram().getName().lastIndexOf('.'));
-    				generateGraphvizFile(m, 1, (x, y) -> true, System.getenv("DAT3M_HOME") + "/output/", name);        		
+    				generateGraphvizFile(m, 1, (x, y) -> true, System.getenv("DAT3M_OUTPUT") + "/", name);        		
             	}
-                
+
+            	boolean safetyViolationFound = false;
+            	if((result == FAIL && !p.getAss().getInvert()) || 
+            			(result == PASS && p.getAss().getInvert())) {
+            		if(TRUE.equals(prover.getModel().evaluate(REACHABILITY.getSMTVariable(ctx)))) {
+            			safetyViolationFound = true;
+            			System.out.println("Safety violation found");
+            		}
+            		if(TRUE.equals(prover.getModel().evaluate(LIVENESS.getSMTVariable(ctx)))) {
+            			System.out.println("Liveness violation found");
+            		}
+            		for(Axiom ax : task.getMemoryModel().getAxioms()) {
+                		if(ax.isFlagged() && TRUE.equals(prover.getModel().evaluate(CAT.getSMTVariable(ax, ctx)))) {
+                			System.out.println("Flag " + (ax.getName() != null ? ax.getName() : ax.getRelation().getName()));
+                		}                			
+            		}
+                }
                 if (p.getFormat().equals(SourceLanguage.LITMUS)) {
                     if (p.getAssFilter() != null) {
                         System.out.println("Filter " + (p.getAssFilter()));
                     }
                     System.out.println("Condition " + p.getAss().toStringWithType());
-                    System.out.println(result == FAIL ? "Ok" : "No");
+                    System.out.println(safetyViolationFound ? "Ok" : "No");
                 } else {
-                	if(result == FAIL) {
-                		if(TRUE.equals(prover.getModel().evaluate(REACHABILITY.getSMTVariable(ctx)))) {
-                			System.out.println("Safety violation found");
-                		}
-                		if(TRUE.equals(prover.getModel().evaluate(LIVENESS.getSMTVariable(ctx)))) {
-                			System.out.println("Liveness violation found");
-                		}
-                	}
-                    System.out.println(result);
+                    System.out.println(result);                	
                 }
 
 				try {
