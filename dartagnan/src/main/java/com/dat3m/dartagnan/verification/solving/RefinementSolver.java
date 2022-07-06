@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.RefinementTask;
+import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -62,13 +63,17 @@ public class RefinementSolver {
     public static Result run(SolverContext ctx, ProverEnvironment prover, RefinementTask task)
             throws InterruptedException, SolverException, InvalidConfigurationException {
 
-		task.preprocessProgram();
+        task.preprocessProgram();
         // We cut the rhs of differences to get a semi-positive model, if possible.
         // This call modifies the baseline model!
         Set<Relation> cutRelations = cutRelationDifferences(task.getMemoryModel(), task.getBaselineModel());
         task.performStaticProgramAnalyses();
         task.performStaticWmmAnalyses();
-		task.initializeEncoders(ctx);
+        task.initializeEncoders(ctx);
+
+        // cut fr
+        Set<Relation> cut = new HashSet<>();
+        cut.add(getRelationFromName("fr", task.getMemoryModel()));
 
         ProgramEncoder programEncoder = task.getProgramEncoder();
         PropertyEncoder propertyEncoder = task.getPropertyEncoder();
@@ -85,7 +90,7 @@ public class RefinementSolver {
         BooleanFormula propertyEncoding = propertyEncoder.encodeSpecification(task.getProperty(), ctx);
         if(bmgr.isFalse(propertyEncoding)) {
             logger.info("Verification finished: property trivially holds");
-       		return PASS;        	
+            return PASS;
         }
 
         logger.info("Starting encoding using " + ctx.getVersion());
@@ -108,20 +113,20 @@ public class RefinementSolver {
 
         logger.info("Refinement procedure started.");
         while (!prover.isUnsat()) {
-        	if(iterationCount == 0 && logger.isDebugEnabled()) {
-        		StringBuilder smtStatistics = new StringBuilder("\n ===== SMT Statistics (after first iteration) ===== \n");
-        		for(String key : prover.getStatistics().keySet()) {
-        			smtStatistics.append(String.format("\t%s -> %s\n", key, prover.getStatistics().get(key)));
-        		}
-        		logger.debug(smtStatistics.toString());
-        	}
+            if(iterationCount == 0 && logger.isDebugEnabled()) {
+                StringBuilder smtStatistics = new StringBuilder("\n ===== SMT Statistics (after first iteration) ===== \n");
+                for(String key : prover.getStatistics().keySet()) {
+                    smtStatistics.append(String.format("\t%s -> %s\n", key, prover.getStatistics().get(key)));
+                }
+                logger.debug(smtStatistics.toString());
+            }
             iterationCount++;
             curTime = System.currentTimeMillis();
             totalNativeSolvingTime += (curTime - lastTime);
 
             logger.debug("Solver iteration: \n" +
-                            " ===== Iteration: {} =====\n" +
-                            "Solving time(ms): {}", iterationCount, curTime - lastTime);
+                    " ===== Iteration: {} =====\n" +
+                    "Solving time(ms): {}", iterationCount, curTime - lastTime);
 
             curTime = System.currentTimeMillis();
             WMMSolver.Result solverResult;
@@ -168,9 +173,9 @@ public class RefinementSolver {
         totalNativeSolvingTime += (curTime - lastTime);
 
         logger.debug("Final solver iteration:\n" +
-                        " ===== Final Iteration: {} =====\n" +
-                        "Native Solving/Proof time(ms): {}", iterationCount, curTime - lastTime);
-		
+                " ===== Final Iteration: {} =====\n" +
+                "Native Solving/Proof time(ms): {}", iterationCount, curTime - lastTime);
+
         if (logger.isInfoEnabled()) {
             String message;
             switch (status) {
@@ -218,12 +223,12 @@ public class RefinementSolver {
                     totalCaatTime, totalRefiningTime, boundCheckTime));
         }
 
-        if(logger.isDebugEnabled()) {        	
+        if(logger.isDebugEnabled()) {
             StringBuilder smtStatistics = new StringBuilder("\n ===== SMT Statistics (after final iteration) ===== \n");
-    		for(String key : prover.getStatistics().keySet()) {
-    			smtStatistics.append(String.format("\t%s -> %s\n", key, prover.getStatistics().get(key)));
-    		}
-    		logger.debug(smtStatistics.toString());
+            for(String key : prover.getStatistics().keySet()) {
+                smtStatistics.append(String.format("\t%s -> %s\n", key, prover.getStatistics().get(key)));
+            }
+            logger.debug(smtStatistics.toString());
         }
 
         veriResult = program.getAss().getInvert() ? veriResult.invert() : veriResult;
@@ -261,6 +266,31 @@ public class RefinementSolver {
         if (collected.add(root)) {
             root.getDependencies().forEach(dep -> collectDependencies(dep, collected));
         }
+    }
+
+    private static Set<Relation> cutRelations(Set<Relation> initial, Wmm baselineWmm) {
+        for (Relation rel : initial) {
+            collectDependencies(rel, initial);
+        }
+        Set<Relation> nonBase = new HashSet<>();
+        RelationRepository repo = baselineWmm.getRelationRepository();
+        for (Relation rel : initial) {
+            if (rel.getDependencies().size() != 0) {
+                nonBase.add(rel);
+                baselineWmm.addAxiom(new ForceEncodeAxiom(getCopyOfRelation(rel, repo)));
+            }
+        }
+        return nonBase;
+    }
+
+    private static Relation getRelationFromName(String name, Wmm model) {
+        List<Relation> rels = model.getRelationDependencyGraph().getNodeContents();
+        for (Relation rel : rels) {
+            if (rel.getName().equals(name)) {
+                return rel;
+            }
+        }
+        return null;
     }
 
     private static Relation getCopyOfRelation(Relation rel, RelationRepository repo) {
