@@ -2,11 +2,16 @@ package com.dat3m.dartagnan.solver.caat;
 
 
 import com.dat3m.dartagnan.solver.caat.constraints.Constraint;
+import com.dat3m.dartagnan.solver.caat.misc.EdgeSetMap;
 import com.dat3m.dartagnan.solver.caat.misc.PathAlgorithm;
 import com.dat3m.dartagnan.solver.caat.reasoning.CAATLiteral;
 import com.dat3m.dartagnan.solver.caat.reasoning.Reasoner;
+import com.dat3m.dartagnan.solver.caat4wmm.EdgeManager;
+import com.dat3m.dartagnan.solver.caat4wmm.statistics.IntermediateStatistics;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
+import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import com.dat3m.dartagnan.wmm.utils.TupleSetMap;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,8 +35,16 @@ public class CAATSolver {
         this.reasoner = new Reasoner();
     }
 
+    private CAATSolver(IntermediateStatistics intermediateStats, EdgeManager edgeManager) {
+        this.reasoner = new Reasoner(intermediateStats, edgeManager);
+    }
+
     public static CAATSolver create() {
         return new CAATSolver();
+    }
+
+    public static CAATSolver create(IntermediateStatistics intermediateStats, EdgeManager edgeManager) {
+        return new CAATSolver(intermediateStats, edgeManager);
     }
 
     // ======================================== Accessors ==============================================
@@ -39,6 +52,8 @@ public class CAATSolver {
     public Reasoner getReasoner() { return reasoner; }
 
     public Statistics getStatistics() { return stats; }
+
+    public void addEagerlyEncodedEdges(TupleSetMap edges) { reasoner.addEagerlyEncodedEdges(edges); }
 
     // ======================================== Solving ==============================================
 
@@ -100,26 +115,31 @@ public class CAATSolver {
         private Status status;
         private DNF<CAATLiteral> baseReasons;
         private final Statistics stats;
+        private TupleSetMap hotEdges;
 
         public Status getStatus() { return status; }
         public DNF<CAATLiteral> getBaseReasons() { return baseReasons; }
         public Statistics getStatistics() { return stats; }
+        public TupleSetMap getHotEdges() { return hotEdges; }
 
         void setStatus(Status status) { this.status = status; }
         void setBaseReasons(DNF<CAATLiteral> reasons) {
             this.baseReasons = reasons;
         }
+        void setHotEdges(TupleSetMap hotEdges) {this.hotEdges = hotEdges; }
 
         public Result() {
             stats = new Statistics();
             status = Status.INCONCLUSIVE;
             baseReasons = DNF.FALSE();
+            hotEdges = new TupleSetMap();
         }
 
         @Override
         public String toString() {
             return status + "\n" +
                     baseReasons + "\n" +
+                    hotEdges + "\n" +
                     stats;
         }
     }

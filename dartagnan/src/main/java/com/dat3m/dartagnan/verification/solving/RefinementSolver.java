@@ -6,17 +6,23 @@ import com.dat3m.dartagnan.encoding.SymmetryEncoder;
 import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
+import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.RelationGraph;
+import com.dat3m.dartagnan.solver.caat4wmm.DynamicEagerEncoder;
+import com.dat3m.dartagnan.solver.caat4wmm.statistics.GlobalStatistics;
 import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
 import com.dat3m.dartagnan.solver.caat4wmm.WMMSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.RelLiteral;
+import com.dat3m.dartagnan.solver.caat4wmm.statistics.IntermediateStatistics;
 import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.RefinementTask;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.axiom.ForceEncodeAxiom;
 import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
 import com.dat3m.dartagnan.wmm.relation.Relation;
@@ -24,7 +30,9 @@ import com.dat3m.dartagnan.wmm.relation.base.stat.RelCartesian;
 import com.dat3m.dartagnan.wmm.relation.base.stat.RelFencerel;
 import com.dat3m.dartagnan.wmm.relation.base.stat.RelSetIdentity;
 import com.dat3m.dartagnan.wmm.relation.binary.RelMinus;
+import com.dat3m.dartagnan.wmm.utils.RecursiveGroup;
 import com.dat3m.dartagnan.wmm.utils.RelationRepository;
+import com.dat3m.dartagnan.wmm.utils.TupleSetMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -77,8 +85,27 @@ public class RefinementSolver {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula globalRefinement = bmgr.makeTrue();
 
+        IntermediateStatistics intermediateStatistics = new IntermediateStatistics(60);
+
+        for(RecursiveGroup recursiveGroup : task.getMemoryModel().getRecursiveGroups()){
+            recursiveGroup.setDoRecurse();
+        }
+
+        for (Relation rel : task.getRelationDependencyGraph().getNodeContents()) {
+            rel.initializeEncoding(ctx);
+            //rel.getWeight();
+        }
+
+        for (Axiom axiom : task.getMemoryModel().getAxioms()) {
+            axiom.initializeEncoding(ctx);
+            axiom.getRelation().incrementWeight(0);
+            for (Relation rel : task.getRelationDependencyGraph().getNodeContents()) {
+                rel.setWeightRecursion();
+            }
+        }
+
         Program program = task.getProgram();
-        WMMSolver solver = new WMMSolver(task, cutRelations);
+        WMMSolver solver = new WMMSolver(task, cutRelations, intermediateStatistics);
         Refiner refiner = new Refiner(task);
         CAATSolver.Status status = INCONSISTENT;
 
@@ -104,7 +131,11 @@ public class RefinementSolver {
         long totalNativeSolvingTime = 0;
         long totalCaatTime = 0;
         long totalRefiningTime = 0;
+        solver.initializeGlobalStats();
         //  ---------------------------------
+
+        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        BooleanFormula allEagerEdges = bmgr.makeTrue();
 
         logger.info("Refinement procedure started.");
         while (!prover.isUnsat()) {
@@ -136,11 +167,18 @@ public class RefinementSolver {
             statList.add(stats);
             logger.debug("Refinement iteration:\n{}", stats);
 
+            DependencyGraph<Relation> rels = task.getRelationDependencyGraph();
+
             status = solverResult.getStatus();
             if (status == INCONSISTENT) {
                 long refineTime = System.currentTimeMillis();
                 DNF<CoreLiteral> reasons = solverResult.getCoreReasons();
                 BooleanFormula refinement = refiner.refine(reasons, ctx);
+                TupleSetMap encodedEdges = DynamicEagerEncoder.determineEncodedTuples(solverResult.getHotEdges(), rels);
+                BooleanFormula eagerly = DynamicEagerEncoder.encodeEagerly(encodedEdges, rels, ctx);
+                allEagerEdges = bmgr.and(allEagerEdges, eagerly);
+                refinement = bmgr.and(refinement, eagerly);
+                solver.addEagerlyEncodedEdges(encodedEdges);
                 prover.addConstraint(refinement);
                 globalRefinement = bmgr.and(globalRefinement, refinement); // Track overall refinement progress
                 totalRefiningTime += (System.currentTimeMillis() - refineTime);
@@ -154,7 +192,20 @@ public class RefinementSolver {
                     for (Conjunction<CoreLiteral> cube : reasons.getCubes()) {
                         message.append("\n").append(cube);
                     }
+                    message.append("\n");
                     logger.trace(message);
+
+                    // Statistics in global environment
+                    if (GlobalStatistics.globalStats) {
+                        //message = new StringBuilder().append("Hot edges in global view:");
+                        //message.append(GlobalStatistics.print());
+                        //message.append(intermediateStatistics);
+                        GlobalStatistics.newIteration();
+                        intermediateStatistics.update();
+                        message.append("\n\n\n\n\nChose edge\n").append(solverResult.getHotEdges());
+                        message.append("\n\nAffected edges\n").append(encodedEdges);
+                        logger.trace(message);
+                    }
                 }
             } else {
                 // No inconsistencies found, we can't refine

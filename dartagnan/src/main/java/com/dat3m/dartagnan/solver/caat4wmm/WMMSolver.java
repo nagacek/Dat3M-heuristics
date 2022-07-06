@@ -5,12 +5,16 @@ import com.dat3m.dartagnan.solver.caat.CAATSolver;
 import com.dat3m.dartagnan.solver.caat.reasoning.CAATLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreReasoner;
+import com.dat3m.dartagnan.solver.caat4wmm.statistics.GlobalStatistics;
+import com.dat3m.dartagnan.solver.caat4wmm.statistics.IntermediateStatistics;
+import com.dat3m.dartagnan.solver.caat4wmm.statistics.heuristics.*;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.relation.Relation;
+import com.dat3m.dartagnan.wmm.utils.TupleSetMap;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -27,6 +31,9 @@ public class WMMSolver {
     private final ExecutionModel executionModel;
     private final CAATSolver solver;
     private final CoreReasoner reasoner;
+    private final IntermediateStatistics intermediateStats;
+    private final EagerEncodingHeuristic heuristic;
+    private boolean initGlobalStats;
 
     public WMMSolver(VerificationTask task, Set<Relation> cutRelations) {
         task.getAnalysisContext().requires(RelationAnalysis.class);
@@ -34,6 +41,19 @@ public class WMMSolver {
         this.executionModel = new ExecutionModel(task);
         this.reasoner = new CoreReasoner(task, executionGraph);
         this.solver = CAATSolver.create();
+        this.intermediateStats = null;
+        this.heuristic = null;
+    }
+
+    public WMMSolver(VerificationTask task, Set<Relation> cutRelations, IntermediateStatistics stats) {
+        task.getAnalysisContext().requires(RelationAnalysis.class);
+        this.executionGraph = new ExecutionGraph(task, cutRelations, true);
+        this.executionModel = new ExecutionModel(task);
+        EdgeManager manager = new EdgeManager(executionModel);
+        this.reasoner = new CoreReasoner(task, executionGraph, manager);
+        this.solver = CAATSolver.create(stats, manager);
+        this.intermediateStats = stats;
+        this.heuristic = new FROnly(task, 5, 10);
     }
 
     public ExecutionModel getExecution() {
@@ -44,11 +64,20 @@ public class WMMSolver {
         return executionGraph;
     }
 
+    public void addEagerlyEncodedEdges(TupleSetMap edges) {
+        solver.addEagerlyEncodedEdges(edges);
+    }
+
     public Result check(Model model, SolverContext ctx) {
         // ============ Extract ExecutionModel ==============
         long curTime = System.currentTimeMillis();
         executionModel.initialize(model, ctx);
         executionGraph.initializeFromModel(executionModel);
+        intermediateStats.initializeFromExecutionGraph(executionGraph);
+        if (GlobalStatistics.globalStats && initGlobalStats) {
+            GlobalStatistics.initialize(executionGraph);
+            initGlobalStats = false;
+        }
         long extractTime = System.currentTimeMillis() - curTime;
 
         // ============== Run the CAATSolver ==============
@@ -61,17 +90,27 @@ public class WMMSolver {
         if (result.getStatus() == CAATSolver.Status.INCONSISTENT) {
             // ============== Compute Core reasons ==============
             curTime = System.currentTimeMillis();
-            List<Conjunction<CoreLiteral>> coreReasons = new ArrayList<>(caatResult.getBaseReasons().getNumberOfCubes());
+            DNF<CAATLiteral> baseReasons = caatResult.getBaseReasons();
+            List<Conjunction<CoreLiteral>> coreReasons = new ArrayList<>(baseReasons.getNumberOfCubes());
             for (Conjunction<CAATLiteral> baseReason : caatResult.getBaseReasons().getCubes()) {
                 coreReasons.add(reasoner.toCoreReason(baseReason));
             }
             stats.numComputedCoreReasons = coreReasons.size();
             result.coreReasons = new DNF<>(coreReasons);
+            result.hotEdges = intermediateStats.computeHotEdges(heuristic);
+            if (GlobalStatistics.globalStats) {
+                GlobalStatistics.insertCoreEdges(coreReasons);
+                GlobalStatistics.insertBaseEdges(baseReasons);
+            }
             stats.numComputedReducedCoreReasons = result.coreReasons.getNumberOfCubes();
             stats.coreReasonComputationTime = System.currentTimeMillis() - curTime;
         }
 
         return result;
+    }
+
+    public void initializeGlobalStats() {
+        initGlobalStats = true;
     }
 
 
@@ -81,14 +120,17 @@ public class WMMSolver {
         private CAATSolver.Status status;
         private DNF<CoreLiteral> coreReasons;
         private Statistics stats;
+        private TupleSetMap hotEdges;
 
         public CAATSolver.Status getStatus() { return status; }
         public DNF<CoreLiteral> getCoreReasons() { return coreReasons; }
         public Statistics getStatistics() { return stats; }
+        public TupleSetMap getHotEdges() { return hotEdges; }
 
         Result() {
             status = CAATSolver.Status.INCONCLUSIVE;
             coreReasons = DNF.FALSE();
+            hotEdges = new TupleSetMap();
         }
 
         static Result fromCAATResult(CAATSolver.Result caatResult) {
@@ -100,10 +142,12 @@ public class WMMSolver {
             return result;
         }
 
+
         @Override
         public String toString() {
             return status + "\n" +
                     coreReasons + "\n" +
+                    hotEdges + "\n" +
                     stats;
         }
     }
@@ -127,6 +171,7 @@ public class WMMSolver {
         public int getNumComputedCoreReasons() { return numComputedCoreReasons; }
         public int getNumComputedReducedCoreReasons() { return numComputedReducedCoreReasons; }
 
+
         public String toString() {
             StringBuilder str = new StringBuilder();
             str.append("Model extraction time(ms): ").append(getModelExtractionTime()).append("\n");
@@ -141,6 +186,7 @@ public class WMMSolver {
                     .append("/").append(getNumComputedReducedCoreReasons()).append("\n");
             return str.toString();
         }
+
     }
 
 }

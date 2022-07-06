@@ -51,15 +51,20 @@ public class RelCrit extends StaticRelation {
     // Let's see if we need to keep a reference to a thread in events for anything else, and then optimize this method
     @Override
     protected BooleanFormula encodeApprox(SolverContext ctx) {
-    	BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-		BooleanFormula enc = bmgr.makeTrue();
+    	return encodeApprox(ctx, encodeTupleSet);
+    }
+
+    @Override
+    public BooleanFormula encodeApprox(SolverContext ctx, TupleSet toEncode) {
+        BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
+        BooleanFormula enc = bmgr.makeTrue();
         for(Thread thread : task.getProgram().getThreads()){
             for(Event lock : thread.getCache().getEvents(FilterBasic.get(Tag.Linux.RCU_LOCK))){
                 for(Event unlock : thread.getCache().getEvents(FilterBasic.get(Tag.Linux.RCU_UNLOCK))){
                     if(lock.getCId() < unlock.getCId()){
                         Tuple tuple = new Tuple(lock, unlock);
-                        if(encodeTupleSet.contains(tuple)){
-                        	BooleanFormula relation = bmgr.and(getExecPair(lock, unlock, ctx));
+                        if(toEncode.contains(tuple)){
+                            BooleanFormula relation = bmgr.and(getExecPair(lock, unlock, ctx));
                             for(Event otherLock : thread.getCache().getEvents(FilterBasic.get(Tag.Linux.RCU_LOCK))){
                                 if(lock.getCId() < otherLock.getCId() && otherLock.getCId() < unlock.getCId()){
                                     relation = bmgr.and(relation, bmgr.not(this.getSMTVar(otherLock, unlock, ctx)));

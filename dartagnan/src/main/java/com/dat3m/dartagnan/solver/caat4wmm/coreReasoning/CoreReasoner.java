@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.solver.caat.reasoning.CAATLiteral;
 import com.dat3m.dartagnan.solver.caat.reasoning.EdgeLiteral;
 import com.dat3m.dartagnan.solver.caat.reasoning.ElementLiteral;
+import com.dat3m.dartagnan.solver.caat4wmm.EdgeManager;
 import com.dat3m.dartagnan.solver.caat4wmm.EventDomain;
 import com.dat3m.dartagnan.solver.caat4wmm.ExecutionGraph;
 import com.dat3m.dartagnan.solver.caat4wmm.basePredicates.FenceGraph;
@@ -29,11 +30,21 @@ public class CoreReasoner {
     private final ExecutionGraph executionGraph;
     private final Wmm memoryModel;
     private final ExecutionAnalysis exec;
+    private final EdgeManager manager;
+
 
     public CoreReasoner(VerificationTask task, ExecutionGraph executionGraph) {
         this.executionGraph = executionGraph;
         this.memoryModel = task.getMemoryModel();
         this.exec = task.getAnalysisContext().requires(ExecutionAnalysis.class);
+        this.manager = null;
+    }
+
+    public CoreReasoner(VerificationTask task, ExecutionGraph executionGraph, EdgeManager manager) {
+        this.executionGraph = executionGraph;
+        this.memoryModel = task.getMemoryModel();
+        this.exec = task.getAnalysisContext().requires(ExecutionAnalysis.class);
+        this.manager = manager;
     }
 
 
@@ -64,7 +75,7 @@ public class CoreReasoner {
                     // Statically absent edges
                 } else {
                     if (rel.getName().equals(RF) || rel.getName().equals(CO)
-                            || executionGraph.getCutRelations().contains(rel)) {
+                            || executionGraph.getCutRelations().contains(rel) || manager.isEagerlyEncoded(rel.getName())) {
                         coreReason.add(new RelLiteral(rel.getName(), tuple, lit.isNegative()));
                     } else if (rel.getName().equals(LOC)) {
                         coreReason.add(new AddressLiteral(tuple, lit.isNegative()));

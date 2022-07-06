@@ -134,6 +134,11 @@ public class RelCo extends Relation {
     }
 
     @Override
+    public BooleanFormula encodeApprox(SolverContext ctx, TupleSet toEncode) {
+        return encodeApprox(ctx);
+    }
+
+    @Override
     protected BooleanFormula encodeApprox(SolverContext ctx) {
         AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
         WmmAnalysis wmmAnalysis = analysisContext.get(WmmAnalysis.class);

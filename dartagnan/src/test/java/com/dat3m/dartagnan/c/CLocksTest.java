@@ -37,7 +37,7 @@ public class CLocksTest extends AbstractCTest {
 
     @Override
     protected long getTimeout() {
-        return 60000;
+        return Long.MAX_VALUE;
     }
 
 	@Parameterized.Parameters(name = "{index}: {0}, target={1}")

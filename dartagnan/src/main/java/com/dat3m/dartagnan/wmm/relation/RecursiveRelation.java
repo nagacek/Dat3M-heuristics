@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.wmm.relation;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import com.dat3m.dartagnan.wmm.utils.TupleSetMap;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -17,6 +18,9 @@ public class RecursiveRelation extends Relation {
 
     private Relation r1;
     private boolean doRecurse = false;
+
+    private boolean weightRecursion = true;
+    private int initialAmount;
 
     public Relation getInner() {
         return r1;
@@ -103,17 +107,38 @@ public class RecursiveRelation extends Relation {
     }
 
     @Override
-    public void addEncodeTupleSet(TupleSet tuples){
+    public TupleSetMap addEncodeTupleSet(TupleSet tuples){
+        TupleSet oldEncodeSet = new TupleSet(encodeTupleSet);
+        TupleSet difference = new TupleSet();
+        TupleSetMap map = new TupleSetMap(getName(), difference);
         if(encodeTupleSet != tuples){
             encodeTupleSet.addAll(tuples);
+            difference.addAll(encodeTupleSet);
             //TODO: This encodeTupleSet is never used except to stop this recursion
             // Can it get larger than r1's encodeTupleSet???
         }
         if(doRecurse){
             doRecurse = false;
-            r1.addEncodeTupleSet(encodeTupleSet);
+            map.merge(r1.addEncodeTupleSet(encodeTupleSet));
+        }
+        difference.removeAll(oldEncodeSet);
+
+        return map;
+    }
+
+    @Override
+    public void incrementWeight(int amount) {
+        if (weightRecursion) {
+            weightRecursion = false;
+            initialAmount = amount;
+            weight += amount;
+            r1.incrementWeight(amount);
+        } else {
+            weight += amount - initialAmount;
         }
     }
+
+    public void setWeightRecursion() { weightRecursion = true; }
 
     @Override
     public int updateRecursiveGroupId(int parentId){
@@ -139,4 +164,8 @@ public class RecursiveRelation extends Relation {
         return r1.encodeApprox(ctx);
     }
 
+    @Override
+    public BooleanFormula encodeApprox(SolverContext ctx, TupleSet toEncode) {
+        return encodeApprox(ctx);
+    }
 }
