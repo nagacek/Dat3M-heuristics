@@ -12,9 +12,13 @@ import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.RefinementTask;
+import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
+import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.dat3m.dartagnan.wmm.utils.Utils;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.*;
@@ -74,6 +78,32 @@ public class Refiner {
         return refinement;
     }
 
+    // Given an axiom <ax> and a map [edge -> reason], encodes the formulas "reason((e1, e2)) => c(e1) < c(e2)",
+    // that is, we use IDL instead of SAT to encode acyclicity
+    public BooleanFormula refineAcyclicity(Axiom ax, Map<Tuple, Conjunction<CoreLiteral>> reasonMap, SolverContext context) {
+        BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
+        IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
+        BooleanFormula refinement = bmgr.makeTrue();
+        Relation rel = ax.getRelation();
+        // For each symmetry permutation, we will create refinement clauses
+        for (Function<Event, Event> perm : symmPermutations) {
+            for (Map.Entry<Tuple, Conjunction<CoreLiteral>> edgeReason : reasonMap.entrySet()) {
+                Event e1 = perm.apply(edgeReason.getKey().getFirst());
+                Event e2 = perm.apply(edgeReason.getKey().getSecond());
+
+                BooleanFormula permutedClause = edgeReason.getValue().getLiterals().stream()
+                        .map(lit -> permuteAndConvert(lit, perm, context))
+                        .reduce(bmgr.makeTrue(), bmgr::and);
+
+                refinement = bmgr.and(refinement,
+                        bmgr.implication(permutedClause,
+                                imgr.lessThan(Utils.intVar(rel.getName(), e1, context), Utils.intVar(rel.getName(), e2, context)
+                        )));
+            }
+        }
+        return refinement;
+    }
+
     // Computes a list of permutations allowed by the program.
     // Depending on the <learningOption>, the set of computed permutations differs.
     // In particular, for the option NONE, only the identity permutation will be returned.
@@ -119,7 +149,7 @@ public class Refiner {
 
     // Changes a reasoning <literal> based on a given permutation <perm> and translates the result
     // into a BooleanFormula for Refinement.
-    private BooleanFormula permuteAndConvert(CoreLiteral literal, Function<Event, Event> perm, SolverContext context) {
+    public BooleanFormula permuteAndConvert(CoreLiteral literal, Function<Event, Event> perm, SolverContext context) {
         BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula enc;
         if (literal instanceof ExecLiteral) {

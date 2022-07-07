@@ -2,7 +2,11 @@ package com.dat3m.dartagnan.solver.caat4wmm;
 
 
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
+import com.dat3m.dartagnan.solver.caat.constraints.AcyclicityConstraint;
+import com.dat3m.dartagnan.solver.caat.constraints.Constraint;
+import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.solver.caat.reasoning.CAATLiteral;
+import com.dat3m.dartagnan.solver.caat.reasoning.Reasoner;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreReasoner;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
@@ -10,13 +14,14 @@ import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
+import com.dat3m.dartagnan.wmm.axiom.Acyclic;
+import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.Relation;
+import com.dat3m.dartagnan.wmm.utils.Tuple;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.SolverContext;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /*
     This is our domain-specific bridging component that specializes the CAATSolver to the WMM setting.
@@ -65,6 +70,9 @@ public class WMMSolver {
             for (Conjunction<CAATLiteral> baseReason : caatResult.getBaseReasons().getCubes()) {
                 coreReasons.add(reasoner.toCoreReason(baseReason));
             }
+
+            computeViolatingCycles(result); // Test code to compute cycle reasons
+
             stats.numComputedCoreReasons = coreReasons.size();
             result.coreReasons = new DNF<>(coreReasons);
             stats.numComputedReducedCoreReasons = result.coreReasons.getNumberOfCubes();
@@ -74,21 +82,69 @@ public class WMMSolver {
         return result;
     }
 
+    private void computeViolatingCycles(Result result) {
+        // To avoid changing the code of CAATSolver,
+        // we simply recompute all cycles and their reasons again
+        // This is sufficient for testing.
+        EventDomain dom = executionGraph.getDomain();
+        Reasoner baseReasoner = solver.getReasoner();
+        for (Map.Entry<Axiom, Constraint> axConstr : executionGraph.getAxiomConstraintMap().entrySet()) {
+            if (!axConstr.getKey().isAcyclicity() || !axConstr.getValue().checkForViolations()) {
+                continue;
+            }
+            List<ViolatingCycle> violations = new ArrayList<>();
+
+            Acyclic ax = (Acyclic) axConstr.getKey();
+            AcyclicityConstraint constr = (AcyclicityConstraint) axConstr.getValue();
+            List<List<Edge>> cycles = constr.getViolations();
+
+            for (List<Edge> cycle : cycles) {
+                List<Tuple> convertedCycle = new ArrayList<>();
+                Map<Tuple, Conjunction<CoreLiteral>> edgeReasons = new HashMap<>();
+                for (Edge e : cycle) {
+                    Tuple t = new Tuple(dom.getObjectById(e.getFirst()).getEvent(), dom.getObjectById(e.getSecond()).getEvent());
+                    convertedCycle.add(t);
+                    edgeReasons.put(t, reasoner.toCoreReason(baseReasoner.computeReason(constr.getConstrainedPredicate(), e)));
+                }
+                violations.add(new ViolatingCycle(ax, convertedCycle, edgeReasons));
+            }
+            result.violatingCycles.put(ax, violations);
+        }
+
+        // ----- Temporary test code -----
+        // This code aggregates all edge-reasons into a single map
+        // This is not needed, but some older testing code relied on such a map
+        for (Map.Entry<Axiom, List<ViolatingCycle>> cycles : result.violatingCycles.entrySet()) {
+            Map<Tuple, Conjunction<CoreLiteral>> combinedEdgeReasons = new HashMap<>();
+            for (ViolatingCycle cycle : cycles.getValue()) {
+                combinedEdgeReasons.putAll(cycle.getEdgeReasons());
+            }
+            result.cycleEdgeReasonsMap.put(cycles.getKey(), combinedEdgeReasons);
+        }
+    }
+
 
     // ===================== Classes ======================
 
     public static class Result {
         private CAATSolver.Status status;
         private DNF<CoreLiteral> coreReasons;
+        // Obsolete, since the map can be computed from the cycles.
+        private Map<Axiom, Map<Tuple, Conjunction<CoreLiteral>>> cycleEdgeReasonsMap;
+        private Map<Axiom, List<ViolatingCycle>> violatingCycles;
         private Statistics stats;
 
         public CAATSolver.Status getStatus() { return status; }
         public DNF<CoreLiteral> getCoreReasons() { return coreReasons; }
+        public Map<Axiom, List<ViolatingCycle>> getViolatingCycles() { return violatingCycles; }
+        public Map<Axiom, Map<Tuple, Conjunction<CoreLiteral>>> getCycleEdgeReasons() { return cycleEdgeReasonsMap; }
         public Statistics getStatistics() { return stats; }
 
         Result() {
             status = CAATSolver.Status.INCONCLUSIVE;
             coreReasons = DNF.FALSE();
+            violatingCycles = new HashMap<>();
+            cycleEdgeReasonsMap = new HashMap<>();
         }
 
         static Result fromCAATResult(CAATSolver.Result caatResult) {

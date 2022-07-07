@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
+import com.dat3m.dartagnan.solver.caat4wmm.ViolatingCycle;
 import com.dat3m.dartagnan.solver.caat4wmm.WMMSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.RelLiteral;
@@ -18,6 +19,8 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.axiom.Acyclic;
+import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.axiom.ForceEncodeAxiom;
 import com.dat3m.dartagnan.wmm.relation.RecursiveRelation;
 import com.dat3m.dartagnan.wmm.relation.Relation;
@@ -26,15 +29,13 @@ import com.dat3m.dartagnan.wmm.relation.base.stat.RelFencerel;
 import com.dat3m.dartagnan.wmm.relation.base.stat.RelSetIdentity;
 import com.dat3m.dartagnan.wmm.relation.binary.RelMinus;
 import com.dat3m.dartagnan.wmm.utils.RelationRepository;
+import com.dat3m.dartagnan.wmm.utils.Tuple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.*;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiPredicate;
 
 import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES;
@@ -87,6 +88,16 @@ public class RefinementSolver {
         Program program = task.getProgram();
         WMMSolver solver = new WMMSolver(task, cutRelations);
         Refiner refiner = new Refiner(task);
+        // --------- Test code ----------
+        List<ReasonGraph> reasonGraphList = new ArrayList<>();
+        task.getMemoryModel().getAxioms().stream().filter(Axiom::isAcyclicity)
+                .forEach(ax -> reasonGraphList.add(new ReasonGraph((Acyclic) ax, refiner)));
+        int totalEdgeReasonsFound = 0;
+        int nonduplicatedReasonsFound = 0;
+        int totalCyclesFound = 0;
+        int totalNewCyclesFound = 0;
+        // -----------------------------
+
         CAATSolver.Status status = INCONSISTENT;
 
         BooleanFormula propertyEncoding = propertyEncoder.encodeSpecification(task.getProperty(), ctx);
@@ -151,6 +162,50 @@ public class RefinementSolver {
                 prover.addConstraint(refinement);
                 globalRefinement = bmgr.and(globalRefinement, refinement); // Track overall refinement progress
                 totalRefiningTime += (System.currentTimeMillis() - refineTime);
+
+
+                // Some test code that keeps statistics of newly found cycles
+                // + encodes the reason graph (potentially)
+                for (Axiom ax : solverResult.getViolatingCycles().keySet()) {
+                    List<ViolatingCycle> cycles = solverResult.getViolatingCycles().get(ax);
+                    ReasonGraph g = reasonGraphList.stream().filter(graph -> graph.getAxiom() == ax).findFirst().get();
+                    for (ViolatingCycle cycle : cycles) {
+                        totalCyclesFound++;
+                        if (g.addCycle(cycle)) {
+                            totalNewCyclesFound++;
+                        }
+                    }
+                    //prover.addConstraint(g.encodeChanges(ctx));
+                }
+
+                // Some other test code...
+                for (Axiom ax : solverResult.getCycleEdgeReasons().keySet()) {
+                    ReasonGraph g = reasonGraphList.stream().filter(graph -> graph.getAxiom() == ax).findFirst().get();
+                    for (Map.Entry<Tuple, Conjunction<CoreLiteral>> entry : solverResult.getCycleEdgeReasons().get(ax).entrySet()) {
+                        totalEdgeReasonsFound++;
+                        if (g.addReason(entry.getKey(), entry.getValue())) {
+                            nonduplicatedReasonsFound++;
+                        }
+                    }
+                    if (iterationCount % 10 == 0) {
+                        // Some statistics stuff
+                        //logger.info("Extrapolating reasons.");
+                        //prover.addConstraint(g.encodeShortestCycles(ctx));
+
+                        List<Map.Entry<Tuple, DNF<CoreLiteral>>> hotEdges = g.getHotnessList();
+                        StringBuilder report = new StringBuilder();
+                        hotEdges.subList(0, Math.min(10, hotEdges.size())).forEach( pair -> {
+                            report.append("-- ").append(String.format("(%s, %s)", pair.getKey().getFirst().getCId(),
+                                            pair.getKey().getSecond().getCId())).append(":\n")
+                                    .append(pair.getValue()).append("\n");
+                        });
+                        logger.info("Hotness status:\n" + report);
+                    }
+
+
+                    // Encode the whole reason graph via acyclicity constraints using IDL
+                    prover.addConstraint(refiner.refineAcyclicity(ax, solverResult.getCycleEdgeReasons().get(ax), ctx));
+                }
 
                 if (REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES) {
                     generateGraphvizFiles(task, solver.getExecution(), iterationCount, reasons);
@@ -223,6 +278,9 @@ public class RefinementSolver {
         if (logger.isInfoEnabled()) {
             logger.info(generateSummary(statList, iterationCount, totalNativeSolvingTime,
                     totalCaatTime, totalRefiningTime, boundCheckTime));
+            logger.info("Cycle edge reason unique/total: {}/{}", nonduplicatedReasonsFound, totalEdgeReasonsFound);
+            logger.info("Cycles unique/total: {}/{}", totalNewCyclesFound, totalCyclesFound);
+
         }
 
         if(logger.isDebugEnabled()) {
