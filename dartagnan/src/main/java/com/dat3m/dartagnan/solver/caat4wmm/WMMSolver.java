@@ -33,6 +33,10 @@ public class WMMSolver {
     private final CAATSolver solver;
     private final CoreReasoner reasoner;
 
+
+    private int acyclic = 0;
+    private int nonAcyclic = 0;
+
     public WMMSolver(VerificationTask task, Set<Relation> cutRelations) {
         task.getAnalysisContext().requires(RelationAnalysis.class);
         this.executionGraph = new ExecutionGraph(task, cutRelations, true);
@@ -89,6 +93,14 @@ public class WMMSolver {
         EventDomain dom = executionGraph.getDomain();
         Reasoner baseReasoner = solver.getReasoner();
         for (Map.Entry<Axiom, Constraint> axConstr : executionGraph.getAxiomConstraintMap().entrySet()) {
+
+            // stats
+            if (!axConstr.getKey().isAcyclicity() && axConstr.getValue().checkForViolations()){
+                nonAcyclic++;
+            } else if (axConstr.getKey().isAcyclicity() && axConstr.getValue().checkForViolations()) {
+                acyclic++;
+            }
+
             if (!axConstr.getKey().isAcyclicity() || !axConstr.getValue().checkForViolations()) {
                 continue;
             }
@@ -110,6 +122,12 @@ public class WMMSolver {
             }
             result.violatingCycles.put(ax, violations);
         }
+
+        // stats
+        if (nonAcyclic != 0)
+            result.stats.acyclicRatio = (float)acyclic / (float)nonAcyclic;
+        else
+            result.stats.acyclicRatio = Float.MAX_VALUE;
 
         // ----- Temporary test code -----
         // This code aggregates all edge-reasons into a single map
@@ -171,6 +189,7 @@ public class WMMSolver {
         int modelSize;
         int numComputedCoreReasons;
         int numComputedReducedCoreReasons;
+        float acyclicRatio;
 
         public long getModelExtractionTime() { return modelExtractionTime; }
         public long getPopulationTime() { return caatStats.getPopulationTime(); }
@@ -182,6 +201,7 @@ public class WMMSolver {
         public int getNumComputedReducedBaseReasons() { return caatStats.getNumComputedReducedReasons(); }
         public int getNumComputedCoreReasons() { return numComputedCoreReasons; }
         public int getNumComputedReducedCoreReasons() { return numComputedReducedCoreReasons; }
+        public float getAcyclicRatio() { return acyclicRatio; }
 
         public String toString() {
             StringBuilder str = new StringBuilder();
@@ -195,6 +215,7 @@ public class WMMSolver {
                     .append("/").append(getNumComputedCoreReasons()).append("\n");
             str.append("#Computed reduced reasons (base/core): ").append(getNumComputedReducedBaseReasons())
                     .append("/").append(getNumComputedReducedCoreReasons()).append("\n");
+            str.append("Ratio of acyclicity violations (acyclic/nonAcyclic): ").append(getAcyclicRatio()).append("\n");
             return str.toString();
         }
     }
