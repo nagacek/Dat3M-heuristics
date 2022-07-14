@@ -172,7 +172,7 @@ public class RefinementSolver {
                 }
 
                 // Some other test code...
-                for (Axiom ax : solverResult.getCycleEdgeReasons().keySet()) {
+                /*for (Axiom ax : solverResult.getCycleEdgeReasons().keySet()) {
                     ReasonGraph g = reasonGraphList.stream().filter(graph -> graph.getAxiom() == ax).findFirst().get();
                     for (Map.Entry<Tuple, Conjunction<CoreLiteral>> entry : solverResult.getCycleEdgeReasons().get(ax).entrySet()) {
                         totalEdgeReasonsFound++;
@@ -198,7 +198,7 @@ public class RefinementSolver {
 
                     // Encode the whole reason graph via acyclicity constraints using IDL
                     //prover.addConstraint(refiner.refineAcyclicity(ax, solverResult.getCycleEdgeReasons().get(ax), ctx));
-                }
+                }*/
 
                 if (REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES) {
                     generateGraphvizFiles(task, solver.getExecution(), iterationCount, reasons);
