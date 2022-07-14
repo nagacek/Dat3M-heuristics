@@ -57,7 +57,7 @@ public class ReasonGraph {
             Set<List<Tuple>> permCycles = refiner.permuteTuples(cycle);
            newCyclesToBeEncoded.addAll(permCycles);
 
-           System.out.println("Added cycles:");
+           /*System.out.println("Added cycles:");
            for (List<Tuple> cyc : permCycles) {
                for (Tuple tuple : cyc) {
                    System.out.print("(" + tuple.getFirst().getCId() + "," + tuple.getSecond().getCId() + ") -> ");
@@ -67,7 +67,7 @@ public class ReasonGraph {
                }
                System.out.print("\n");
            }
-           System.out.print("\n\n");
+           System.out.print("\n\n");*/
         }
 
         for (Tuple edge : cycle) {
@@ -76,7 +76,7 @@ public class ReasonGraph {
                 derivationToBeEncoded.put(edge, reason);
                 changes = true;
 
-                System.out.println("Reasons (" + edge.getFirst().getCId() + "," + edge.getSecond().getCId() + "):");
+                //System.out.println("Reasons (" + edge.getFirst().getCId() + "," + edge.getSecond().getCId() + "):");
 
                 // Compute permutations for SAT version
                 List<CoreLiteral> reasonList = new ArrayList<>();
@@ -88,9 +88,9 @@ public class ReasonGraph {
                     Tuple permEdge = ((RelLiteral)permutedDerivation.remove(0)).getData();
                     Conjunction<CoreLiteral> permReason = new Conjunction<>(permutedDerivation);
                     derivationToBeEncoded.put(permEdge, permReason);
-                    System.out.println("(" + permEdge.getFirst().getCId() + "," + permEdge.getSecond().getCId() + "): " + permReason);
+                    //System.out.println("(" + permEdge.getFirst().getCId() + "," + permEdge.getSecond().getCId() + "): " + permReason);
                 }
-                System.out.println("\n");
+                //System.out.println("\n");
             }
         }
         return changes;

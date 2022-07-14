@@ -38,7 +38,7 @@ public class Reasoner {
         List<Conjunction<CAATLiteral>> reasonList = new ArrayList<>(violations.size());
 
         if (constraint instanceof AcyclicityConstraint) {
-            /*// For acyclicity constraints, it is likely that we encounter the same
+            // For acyclicity constraints, it is likely that we encounter the same
             // edge multiple times (as it can be part of different cycles)
             // so we memoize the computed reasons and reuse them if possible.
             final RelationGraph constrainedGraph = (RelationGraph) pred;
@@ -50,7 +50,7 @@ public class Reasoner {
                         .map(edge -> reasonMap.computeIfAbsent(edge, key -> computeReason(constrainedGraph, key)))
                         .reduce(Conjunction.TRUE(), Conjunction::and);
                 reasonList.add(reason);
-            }*/
+            }
         } else {
             for (Collection<? extends Derivable> violation : violations) {
                 Conjunction<CAATLiteral> reason = violation.stream()
