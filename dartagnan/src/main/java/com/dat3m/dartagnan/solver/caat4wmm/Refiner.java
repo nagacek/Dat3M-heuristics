@@ -86,7 +86,8 @@ public class Refiner {
         BooleanFormula refinement = bmgr.makeTrue();
         Relation rel = ax.getRelation();
         // For each symmetry permutation, we will create refinement clauses
-        for (Function<Event, Event> perm : symmPermutations) {
+        //for (Function<Event, Event> perm : symmPermutations) {
+            Function<Event, Event> perm = a -> a;
             for (Map.Entry<Tuple, Conjunction<CoreLiteral>> edgeReason : reasonMap.entrySet()) {
                 Event e1 = perm.apply(edgeReason.getKey().getFirst());
                 Event e2 = perm.apply(edgeReason.getKey().getSecond());
@@ -100,7 +101,7 @@ public class Refiner {
                                 imgr.lessThan(Utils.intVar(rel.getName(), e1, context), Utils.intVar(rel.getName(), e2, context)
                         )));
             }
-        }
+        //}
         return refinement;
     }
 
