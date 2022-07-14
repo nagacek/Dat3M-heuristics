@@ -174,4 +174,46 @@ public class Refiner {
         return literal.isNegative() ? bmgr.not(enc) : enc;
     }
 
+
+    public Set<List<Tuple>> permuteTuples(List<Tuple> tuples) {
+        Set<List<Tuple>> allPerms = new HashSet<>();
+        for (Function<Event, Event> perm : symmPermutations) {
+            List<Tuple> specificPerm = new ArrayList<>();
+            for (Tuple tuple : tuples) {
+                Event e1 = perm.apply(tuple.getFirst());
+                Event e2 = perm.apply(tuple.getSecond());
+                specificPerm.add(new Tuple(e1, e2));
+            }
+            allPerms.add(specificPerm);
+        }
+        return allPerms;
+    }
+
+    public Set<List<CoreLiteral>> permute(List<CoreLiteral> literals) {
+        Set<List<CoreLiteral>> allPerms = new HashSet<>();
+        for (Function<Event, Event> perm : symmPermutations) {
+            List<CoreLiteral> specificPerm = new ArrayList<>();
+            for (CoreLiteral literal : literals) {
+                if (literal instanceof ExecLiteral) {
+                    ExecLiteral lit = (ExecLiteral) literal;
+                    specificPerm.add(new ExecLiteral(perm.apply(lit.getData())));
+                } else if (literal instanceof AddressLiteral) {
+                    AddressLiteral loc = (AddressLiteral) literal;
+                    MemEvent e1 = (MemEvent) perm.apply(loc.getFirst());
+                    MemEvent e2 = (MemEvent) perm.apply(loc.getSecond());
+                    specificPerm.add(new AddressLiteral(e1, e2, loc.isNegative()));
+                } else if (literal instanceof RelLiteral) {
+                    RelLiteral lit = (RelLiteral) literal;
+                    Event e1 = perm.apply(lit.getData().getFirst());
+                    Event e2 = perm.apply(lit.getData().getSecond());
+                    specificPerm.add(new RelLiteral(lit.getName(), new Tuple(e1, e2), lit.isNegative()));
+                } else {
+                    throw new IllegalArgumentException("CoreLiteral " + literal.toString() + " is not supported");
+                }
+            }
+            allPerms.add(specificPerm);
+        }
+        return allPerms;
+    }
+
 }

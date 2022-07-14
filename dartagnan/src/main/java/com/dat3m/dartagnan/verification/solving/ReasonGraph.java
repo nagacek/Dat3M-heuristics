@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
 import com.dat3m.dartagnan.solver.caat4wmm.ViolatingCycle;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
+import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.RelLiteral;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.wmm.axiom.Acyclic;
@@ -51,6 +52,9 @@ public class ReasonGraph {
         if (encounteredCycles.add(cycle)) {
             newCyclesToBeEncoded.add(cycle);
             //changes = true; // Test code
+
+            // Compute permutations for SAT version
+            encounteredCycles.addAll(refiner.permuteTuples(cycle));
         }
 
         for (Tuple edge : cycle) {
@@ -58,6 +62,16 @@ public class ReasonGraph {
             if (addReason(edge, reason)) {
                 derivationToBeEncoded.put(edge, reason);
                 changes = true;
+
+                // Compute permutations for SAT version
+                List<CoreLiteral> reasonList = new ArrayList<>();
+                reasonList.add(new RelLiteral(axiom.getRelation().getName(), edge, false));
+                reasonList.addAll(reason.toList());
+                for (List<CoreLiteral> permutedDerivation : refiner.permute(reasonList)) {
+                    assert permutedDerivation.get(0) instanceof RelLiteral;
+                    Tuple permEdge = ((RelLiteral)permutedDerivation.remove(0)).getData();
+                    derivationToBeEncoded.put(permEdge, new Conjunction<>(permutedDerivation));
+                }
             }
         }
         return changes;
