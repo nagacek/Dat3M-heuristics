@@ -168,7 +168,7 @@ public class RefinementSolver {
                             totalNewCyclesFound++;
                         }
                     }
-                    prover.addConstraint(g.encodeChanges(ctx));
+                    //prover.addConstraint(g.encodeChanges(ctx));
                 }
 
                 // Some other test code...
@@ -197,7 +197,7 @@ public class RefinementSolver {
 
 
                     // Encode the whole reason graph via acyclicity constraints using IDL
-                    //prover.addConstraint(refiner.refineAcyclicity(ax, solverResult.getCycleEdgeReasons().get(ax), ctx));
+                    prover.addConstraint(refiner.refineAcyclicity(ax, solverResult.getCycleEdgeReasons().get(ax), ctx));
                 }
 
                 if (REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES) {
