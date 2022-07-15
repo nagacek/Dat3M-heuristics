@@ -67,6 +67,12 @@ public class RefinementSolver {
         // We cut the rhs of differences to get a semi-positive model, if possible.
         // This call modifies the baseline model!
         Set<Relation> cutRelations = cutRelationDifferences(task.getMemoryModel(), task.getBaselineModel());
+
+        // cut fr
+        Set<Relation> cut = new HashSet<>();
+        cut.add(getRelationFromName("fr", task.getMemoryModel()));
+        cutRelations.addAll(cutRelations(cut, task.getBaselineModel()));
+
         task.performStaticProgramAnalyses();
         task.performStaticWmmAnalyses();
 		task.initializeEncoders(ctx);
@@ -313,6 +319,27 @@ public class RefinementSolver {
             }
         }
         return cutRelations;
+    }
+
+
+    private static Set<Relation> cutRelations(Set<Relation> initial, Wmm baselineWmm) {
+        Set<Relation> dependencies = new HashSet<>();
+        for (Relation rel : initial) {
+            collectDependencies(rel, dependencies);
+        }
+        Set<Relation> nonBase = new HashSet<>();
+        RelationRepository repo = baselineWmm.getRelationRepository();
+        for (Relation rel : dependencies) {
+            if (rel.getDependencies().size() != 0) {
+                nonBase.add(rel);
+                baselineWmm.addAxiom(new ForceEncodeAxiom(getCopyOfRelation(rel, repo)));
+            }
+        }
+        return nonBase;
+    }
+
+    private static Relation getRelationFromName(String name, Wmm model) {
+        return model.getRelationRepository().getRelation(name);
     }
 
     private static void collectDependencies(Relation root, Set<Relation> collected) {
