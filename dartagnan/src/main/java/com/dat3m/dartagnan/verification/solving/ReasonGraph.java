@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
 import com.dat3m.dartagnan.solver.caat4wmm.ViolatingCycle;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
+import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.RelLiteral;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.wmm.axiom.Acyclic;
@@ -34,7 +35,7 @@ public class ReasonGraph {
     // are not yet encoded (if encoding of cycles/derivations should take place).
     private Set<List<Tuple>> encounteredCycles = new HashSet<>();
     private List<List<Tuple>> newCyclesToBeEncoded = new ArrayList<>();
-    private Map<Tuple, Conjunction<CoreLiteral>> derivationToBeEncoded = new HashMap<>();
+    private Map<Tuple, Set<Conjunction<CoreLiteral>>> derivationToBeEncoded = new HashMap<>();
 
     public ReasonGraph(Acyclic axiomToTrack, Refiner refiner) {
         this.axiom = axiomToTrack;
@@ -49,15 +50,51 @@ public class ReasonGraph {
         List<Tuple> cycle = vio.getCycle();
         boolean changes = false;
         if (encounteredCycles.add(cycle)) {
-            newCyclesToBeEncoded.add(cycle);
+            //newCyclesToBeEncoded.add(cycle);
             //changes = true; // Test code
+
+            // Compute permutations for SAT version
+            Set<List<Tuple>> permCycles = refiner.permuteTuples(cycle);
+            newCyclesToBeEncoded.addAll(permCycles);
+
+           /*System.out.println("Added cycles:");
+           for (List<Tuple> cyc : permCycles) {
+               for (Tuple tuple : cyc) {
+                   System.out.print("(" + tuple.getFirst().getCId() + "," + tuple.getSecond().getCId() + ") -> ");
+               }
+               if (cyc.equals(cycle)) {
+                   System.out.print(" <- not permuted");
+               }
+               System.out.print("\n");
+           }
+           System.out.print("\n\n");*/
         }
 
         for (Tuple edge : cycle) {
             Conjunction<CoreLiteral> reason = vio.getEdgeReasons().get(edge);
             if (addReason(edge, reason)) {
-                derivationToBeEncoded.put(edge, reason);
+                //derivationToBeEncoded.put(edge, reason);
                 changes = true;
+
+                //System.out.println("Reasons (" + edge.getFirst().getCId() + "," + edge.getSecond().getCId() + "):");
+
+                // Compute permutations for SAT version
+                List<CoreLiteral> reasonList = new ArrayList<>();
+                reasonList.add(new RelLiteral(axiom.getRelation().getName(), edge, false));
+                reasonList.addAll(reason.toList());
+                Set<List<CoreLiteral>> permReasons = refiner.permute(reasonList);
+                for (List<CoreLiteral> permutedDerivation : permReasons) {
+                    assert permutedDerivation.get(0) instanceof RelLiteral;
+                    Tuple permEdge = ((RelLiteral)permutedDerivation.remove(0)).getData();
+                    Conjunction<CoreLiteral> permReason = new Conjunction<>(permutedDerivation);
+                    Set<Conjunction<CoreLiteral>> reasonSet = new HashSet<>();
+                    reasonSet.add(permReason);
+                    if (derivationToBeEncoded.putIfAbsent(permEdge, reasonSet) != null) {
+                        derivationToBeEncoded.get(permEdge).add(permReason);
+                    }
+                    //System.out.println("(" + permEdge.getFirst().getCId() + "," + permEdge.getSecond().getCId() + "): " + permReason + "\n");
+                }
+                //System.out.println("\n");
             }
         }
         return changes;
@@ -71,8 +108,9 @@ public class ReasonGraph {
 
         // Update derivations
         for (Tuple edge : derivationToBeEncoded.keySet()) {
-            Conjunction<CoreLiteral> reason = derivationToBeEncoded.get(edge);
-            enc = bmgr.and(enc, bmgr.implication(clause2Formulas(reason, ctx), rel.getSMTVar(edge, ctx)));
+            for (Conjunction<CoreLiteral> reason : derivationToBeEncoded.get(edge)) {
+                enc = bmgr.and(enc, bmgr.implication(clause2Formulas(reason, ctx), rel.getSMTVar(edge, ctx)));
+            }
         }
 
         // Encode new cycles (concretely, encode formula that disallows these cycles)
@@ -119,7 +157,8 @@ public class ReasonGraph {
     // and ends up encoding cycles of length 2 that can never happen (e.g. cycles with 2 opposing coherences)
     public BooleanFormula encodeShortestCycles(SolverContext ctx) {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        BooleanFormula enc = bmgr.makeFalse();
+        //BooleanFormula enc = bmgr.makeFalse();
+        DNF<CoreLiteral> enc = DNF.FALSE();
 
         Set<Event> nodes = new HashSet<>(inEdges.keySet());
 
@@ -130,17 +169,19 @@ public class ReasonGraph {
             if (shortestPath.isEmpty()) {
                 continue;
             }
-            BooleanFormula cycle = bmgr.makeTrue();
+            //BooleanFormula cycle = bmgr.makeTrue();
+            DNF<CoreLiteral> cycle = DNF.TRUE();
             for (Tuple t : shortestPath) {
                 nodes.remove(t.getFirst());
                 nodes.remove(t.getSecond());
 
-                cycle = bmgr.and(cycle, DNF2Formula(reasonMap.get(t), ctx));
+                cycle = cycle.and(reasonMap.get(t));
+                //cycle = bmgr.and(cycle, DNF2Formula(reasonMap.get(t), ctx));
             }
-            enc = bmgr.or(enc, cycle);
+            enc = enc.or(cycle);
         }
 
-        return bmgr.not(enc);
+        return bmgr.not(refiner.refine(enc, ctx));
     }
 
     private BooleanFormula DNF2Formula(DNF<CoreLiteral> dnf, SolverContext ctx) {
