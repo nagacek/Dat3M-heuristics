@@ -35,7 +35,7 @@ public class ReasonGraph {
     // are not yet encoded (if encoding of cycles/derivations should take place).
     private Set<List<Tuple>> encounteredCycles = new HashSet<>();
     private List<List<Tuple>> newCyclesToBeEncoded = new ArrayList<>();
-    private Map<Tuple, Conjunction<CoreLiteral>> derivationToBeEncoded = new HashMap<>();
+    private Map<Tuple, Set<Conjunction<CoreLiteral>>> derivationToBeEncoded = new HashMap<>();
 
     public ReasonGraph(Acyclic axiomToTrack, Refiner refiner) {
         this.axiom = axiomToTrack;
@@ -50,12 +50,12 @@ public class ReasonGraph {
         List<Tuple> cycle = vio.getCycle();
         boolean changes = false;
         if (encounteredCycles.add(cycle)) {
-            newCyclesToBeEncoded.add(cycle);
+            //newCyclesToBeEncoded.add(cycle);
             //changes = true; // Test code
 
             // Compute permutations for SAT version
             Set<List<Tuple>> permCycles = refiner.permuteTuples(cycle);
-           newCyclesToBeEncoded.addAll(permCycles);
+            newCyclesToBeEncoded.addAll(permCycles);
 
            /*System.out.println("Added cycles:");
            for (List<Tuple> cyc : permCycles) {
@@ -73,7 +73,7 @@ public class ReasonGraph {
         for (Tuple edge : cycle) {
             Conjunction<CoreLiteral> reason = vio.getEdgeReasons().get(edge);
             if (addReason(edge, reason)) {
-                derivationToBeEncoded.put(edge, reason);
+                //derivationToBeEncoded.put(edge, reason);
                 changes = true;
 
                 //System.out.println("Reasons (" + edge.getFirst().getCId() + "," + edge.getSecond().getCId() + "):");
@@ -87,8 +87,12 @@ public class ReasonGraph {
                     assert permutedDerivation.get(0) instanceof RelLiteral;
                     Tuple permEdge = ((RelLiteral)permutedDerivation.remove(0)).getData();
                     Conjunction<CoreLiteral> permReason = new Conjunction<>(permutedDerivation);
-                    derivationToBeEncoded.put(permEdge, permReason);
-                    //System.out.println("(" + permEdge.getFirst().getCId() + "," + permEdge.getSecond().getCId() + "): " + permReason);
+                    Set<Conjunction<CoreLiteral>> reasonSet = new HashSet<>();
+                    reasonSet.add(permReason);
+                    if (derivationToBeEncoded.putIfAbsent(permEdge, reasonSet) != null) {
+                        derivationToBeEncoded.get(permEdge).add(permReason);
+                    }
+                    //System.out.println("(" + permEdge.getFirst().getCId() + "," + permEdge.getSecond().getCId() + "): " + permReason + "\n");
                 }
                 //System.out.println("\n");
             }
@@ -104,8 +108,9 @@ public class ReasonGraph {
 
         // Update derivations
         for (Tuple edge : derivationToBeEncoded.keySet()) {
-            Conjunction<CoreLiteral> reason = derivationToBeEncoded.get(edge);
-            enc = bmgr.and(enc, bmgr.implication(clause2Formulas(reason, ctx), rel.getSMTVar(edge, ctx)));
+            for (Conjunction<CoreLiteral> reason : derivationToBeEncoded.get(edge)) {
+                enc = bmgr.and(enc, bmgr.implication(clause2Formulas(reason, ctx), rel.getSMTVar(edge, ctx)));
+            }
         }
 
         // Encode new cycles (concretely, encode formula that disallows these cycles)
