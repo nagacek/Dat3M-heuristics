@@ -11,6 +11,7 @@ import java.util.List;
 
 public abstract class EagerEncodingHeuristic {
     protected DependencyGraph<Relation> rels;
+    protected long deltaTime = 0;
 
     public EagerEncodingHeuristic(VerificationTask task) {
         this.rels = task.getMemoryModel().getRelationDependencyGraph();
@@ -31,4 +32,7 @@ public abstract class EagerEncodingHeuristic {
         }
         return true;
     }
+
+
+    public long getDeltaTime() { return deltaTime; }
 }

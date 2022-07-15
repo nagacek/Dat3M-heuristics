@@ -85,7 +85,7 @@ public class RefinementSolver {
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula globalRefinement = bmgr.makeTrue();
 
-        IntermediateStatistics intermediateStatistics = new IntermediateStatistics(60);
+        IntermediateStatistics intermediateStatistics = new IntermediateStatistics();
 
         for(RecursiveGroup recursiveGroup : task.getMemoryModel().getRecursiveGroups()){
             recursiveGroup.setDoRecurse();
@@ -131,6 +131,7 @@ public class RefinementSolver {
         long totalNativeSolvingTime = 0;
         long totalCaatTime = 0;
         long totalRefiningTime = 0;
+        long statisticTime = 0;
         solver.initializeGlobalStats();
         //  ---------------------------------
 
@@ -212,6 +213,7 @@ public class RefinementSolver {
             }
             totalCaatTime += (System.currentTimeMillis() - curTime);
             lastTime = System.currentTimeMillis();
+            statisticTime = stats.getStatisticTime();
         }
         iterationCount++;
         curTime = System.currentTimeMillis();
@@ -265,7 +267,7 @@ public class RefinementSolver {
 
         if (logger.isInfoEnabled()) {
             logger.info(generateSummary(statList, iterationCount, totalNativeSolvingTime,
-                    totalCaatTime, totalRefiningTime, boundCheckTime));
+                    totalCaatTime, totalRefiningTime, boundCheckTime, statisticTime));
         }
 
         if(logger.isDebugEnabled()) {        	
@@ -353,7 +355,7 @@ public class RefinementSolver {
 
     private static CharSequence generateSummary(List<WMMSolver.Statistics> statList, int iterationCount,
                                                 long totalNativeSolvingTime, long totalCaatTime,
-                                                long totalRefiningTime, long boundCheckTime) {
+                                                long totalRefiningTime, long boundCheckTime, long statisticTime) {
         long totalModelExtractTime = 0;
         long totalPopulationTime = 0;
         long totalConsistencyCheckTime = 0;
@@ -388,6 +390,7 @@ public class RefinementSolver {
                 .append("   -- Consistency check time(ms): ").append(totalConsistencyCheckTime).append("\n")
                 .append("   -- Reason computation time(ms): ").append(totalReasonComputationTime).append("\n")
                 .append("   -- Refining time(ms): ").append(totalRefiningTime).append("\n")
+                .append("   -- Statistics time(ms): ").append(statisticTime).append("\n")
                 .append("   -- #Computed core reasons: ").append(totalNumReasons).append("\n")
                 .append("   -- #Computed core reduced reasons: ").append(totalNumReducedReasons).append("\n");
         if (statList.size() > 0) {

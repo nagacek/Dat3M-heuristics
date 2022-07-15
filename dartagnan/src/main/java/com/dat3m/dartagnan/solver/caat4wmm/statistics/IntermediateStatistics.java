@@ -27,6 +27,7 @@ public class IntermediateStatistics {
     private EventDomain domain;
     private int iterationCounter;
     private final int relearn;
+    private long deltaTime = 0;
 
     public IntermediateStatistics(int relearn) {
         edges = new HotMap<>();
@@ -61,6 +62,7 @@ public class IntermediateStatistics {
     }
 
     public void update() {
+        long startTime = System.currentTimeMillis();
         edges.update();
         //edgesWOMemoized.update();
         //iterations.update();
@@ -78,9 +80,11 @@ public class IntermediateStatistics {
             entry.getValue().update();
         }
         iterationCounter++;
+        deltaTime += System.currentTimeMillis() - startTime;
     }
 
     public void insert(String name, Derivable der, Derivable cameFrom) {
+        long startTime = System.currentTimeMillis();
         if (der instanceof Edge) {
             Event e1 = caatIdToEvent(((Edge) der).getFirst());
             Event e2 = caatIdToEvent(((Edge) der).getSecond());
@@ -107,9 +111,11 @@ public class IntermediateStatistics {
 
             saveForLater(name, event, cameFrom);
         }
+        deltaTime += System.currentTimeMillis() - startTime;
     }
 
     public void addMemoizedReasons(Collection<Edge> caatEdges) {
+        long startTime = System.currentTimeMillis();
         for (Edge caatEdge : caatEdges) {
             Tuple edge = new Tuple(caatIdToEvent(caatEdge.getFirst()), caatIdToEvent(caatEdge.getSecond()));
             if (computedRelations.containsKey(edge)) {
@@ -119,6 +125,7 @@ public class IntermediateStatistics {
                 }
             }
         }
+        deltaTime += System.currentTimeMillis() - startTime;
     }
 
     public Event caatIdToEvent(int caatId) {
@@ -131,13 +138,16 @@ public class IntermediateStatistics {
     }
 
     public void reused(String name) {
+        long startTime = System.currentTimeMillis();
         if (!reuseCount.containsKey(name)) {
             reuseCount.put(name, new UpdatableValue<Float>(0f));
         }
         reuseCount.get(name).setCurrent(reuseCount.get(name).current() + 1);
+        deltaTime += System.currentTimeMillis() - startTime;
     }
 
     private void saveForLater(String name, List<Event> list, Derivable cameFrom) {
+        long startTime = System.currentTimeMillis();
         if (cameFrom == null || !(cameFrom instanceof Edge)) {
             return;
         }
@@ -151,6 +161,7 @@ public class IntermediateStatistics {
 
         ArrayList<ReasonElement> reasons = computedRelations.get(edge);
         reasons.add(new ReasonElement(name, list));
+        deltaTime += System.currentTimeMillis() - startTime;
     }
 
     public String toString() {
@@ -253,5 +264,7 @@ public class IntermediateStatistics {
         str.append("\n");
         return str.toString();
     }
+
+    public long getDeltaTime() { return deltaTime; }
 
 }

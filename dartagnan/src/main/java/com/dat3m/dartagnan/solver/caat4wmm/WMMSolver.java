@@ -53,7 +53,7 @@ public class WMMSolver {
         this.reasoner = new CoreReasoner(task, executionGraph, manager);
         this.solver = CAATSolver.create(stats, manager);
         this.intermediateStats = stats;
-        this.heuristic = new FROnly(task, 5, 10);
+        this.heuristic = new FROnly(task, 5, 3);
     }
 
     public ExecutionModel getExecution() {
@@ -103,6 +103,7 @@ public class WMMSolver {
                 GlobalStatistics.insertBaseEdges(baseReasons);
             }
             stats.numComputedReducedCoreReasons = result.coreReasons.getNumberOfCubes();
+            stats.statisticTime = intermediateStats.getDeltaTime() + heuristic.getDeltaTime();
             stats.coreReasonComputationTime = System.currentTimeMillis() - curTime;
         }
 
@@ -156,6 +157,7 @@ public class WMMSolver {
         CAATSolver.Statistics caatStats;
         long modelExtractionTime;
         long coreReasonComputationTime;
+        long statisticTime;
         int modelSize;
         int numComputedCoreReasons;
         int numComputedReducedCoreReasons;
@@ -164,6 +166,7 @@ public class WMMSolver {
         public long getPopulationTime() { return caatStats.getPopulationTime(); }
         public long getBaseReasonComputationTime() { return caatStats.getReasonComputationTime(); }
         public long getCoreReasonComputationTime() { return coreReasonComputationTime; }
+        public long getStatisticTime() { return statisticTime; }
         public long getConsistencyCheckTime() { return caatStats.getConsistencyCheckTime(); }
         public int getModelSize() { return modelSize; }
         public int getNumComputedBaseReasons() { return caatStats.getNumComputedReasons(); }
@@ -179,6 +182,7 @@ public class WMMSolver {
             str.append("Consistency check time(ms): ").append(getConsistencyCheckTime()).append("\n");
             str.append("Base Reason computation time(ms): ").append(getBaseReasonComputationTime()).append("\n");
             str.append("Core Reason computation time(ms): ").append(getCoreReasonComputationTime()).append("\n");
+            str.append("Core Reason computation time(ms): ").append(getStatisticTime()).append("\n");
             str.append("Model size (#events): ").append(getModelSize()).append("\n");
             str.append("#Computed reasons (base/core): ").append(getNumComputedBaseReasons())
                     .append("/").append(getNumComputedCoreReasons()).append("\n");
