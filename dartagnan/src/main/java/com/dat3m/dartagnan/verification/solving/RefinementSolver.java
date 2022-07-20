@@ -222,6 +222,12 @@ public class RefinementSolver {
         curTime = System.currentTimeMillis();
         totalNativeSolvingTime += (curTime - lastTime);
 
+        for (ReasonGraph graph : reasonGraphList) {
+            logger.info("Cycles that could have been extrapolated beforehand {}\n{}", graph.getAxiom().getName(), graph.showNotNew());
+            logger.info("Cycles that could have been extrapolated beforehand {} (lengths)\n{}", graph.getAxiom().getName(), graph.showCycleLengthHotness());
+            logger.info("Cycles that could have been extrapolated beforehand {} (hot events)\n{}", graph.getAxiom().getName(), graph.showEventHotness());
+        }
+
         logger.debug("Final solver iteration:\n" +
                         " ===== Final Iteration: {} =====\n" +
                         "Native Solving/Proof time(ms): {}", iterationCount, curTime - lastTime);

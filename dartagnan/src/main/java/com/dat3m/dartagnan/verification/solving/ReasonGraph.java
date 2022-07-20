@@ -34,8 +34,12 @@ public class ReasonGraph {
     // which cycles are not need encoded and which newly found reasons for edges
     // are not yet encoded (if encoding of cycles/derivations should take place).
     private Set<List<Tuple>> encounteredCycles = new HashSet<>();
+    private Set<List<Tuple>> notNewCycles = new HashSet<>();
     private List<List<Tuple>> newCyclesToBeEncoded = new ArrayList<>();
     private Map<Tuple, Set<Conjunction<CoreLiteral>>> derivationToBeEncoded = new HashMap<>();
+
+    private Map<Event, Integer> hotEvents = new HashMap<>();
+    private Map<Integer, Integer> cycleLength = new HashMap<>();
 
     public ReasonGraph(Acyclic axiomToTrack, Refiner refiner) {
         this.axiom = axiomToTrack;
@@ -56,6 +60,7 @@ public class ReasonGraph {
             // Compute permutations for SAT version
             Set<List<Tuple>> permCycles = refiner.permuteTuples(cycle);
             newCyclesToBeEncoded.addAll(permCycles);
+            encounteredCycles.addAll(permCycles);
 
            /*System.out.println("Added cycles:");
            for (List<Tuple> cyc : permCycles) {
@@ -95,6 +100,19 @@ public class ReasonGraph {
                     //System.out.println("(" + permEdge.getFirst().getCId() + "," + permEdge.getSecond().getCId() + "): " + permReason + "\n");
                 }
                 //System.out.println("\n");
+            }
+        }
+        if (!changes) {
+            notNewCycles.add(cycle);
+            for (Tuple edge : cycle) {
+                Integer current = hotEvents.putIfAbsent(edge.getFirst(), 1);
+                if (current != null) {
+                    hotEvents.replace(edge.getFirst(), current + 1);
+                }
+            }
+            Integer current = cycleLength.putIfAbsent(cycle.size(), 1);
+            if (current != null) {
+                cycleLength.replace(cycle.size(), current + 1);
             }
         }
         return changes;
@@ -182,6 +200,40 @@ public class ReasonGraph {
         }
 
         return bmgr.not(refiner.refine(enc, ctx));
+    }
+
+    public String showNotNew() {
+        String cycleString = "";
+        for (List<Tuple> cycle : notNewCycles) {
+            for (Tuple edge : cycle) {
+                cycleString += "(" + edge.getFirst().getCId() + "," + edge.getSecond().getCId() + ") -> ";
+            }
+            cycleString += "\n";
+            /*for (Tuple edge : cycle) {
+                cycleString += edge.toString() + " -> ";
+            }
+            cycleString += "}\n";*/
+
+        }
+        return cycleString;
+    }
+
+    public String showCycleLengthHotness() {
+        StringBuilder returnString = new StringBuilder();
+        cycleLength.entrySet().stream().sorted((entry1, entry2) -> entry2.getValue().compareTo(entry1.getValue()))
+                .forEachOrdered(entry -> {
+                    returnString.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+        });
+        return returnString.toString();
+    }
+
+    public String showEventHotness() {
+        StringBuilder returnString = new StringBuilder();
+        hotEvents.entrySet().stream().sorted((entry1, entry2) -> entry2.getValue().compareTo(entry1.getValue()))
+                .forEachOrdered(entry -> {
+                    returnString.append(entry.getKey().getCId()).append("  [").append(entry.getKey()).append("]: ").append(entry.getValue()).append("\n");
+                });
+        return returnString.toString();
     }
 
     private BooleanFormula DNF2Formula(DNF<CoreLiteral> dnf, SolverContext ctx) {
