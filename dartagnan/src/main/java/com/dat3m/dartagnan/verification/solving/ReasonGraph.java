@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.verification.solving;
 
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
 import com.dat3m.dartagnan.solver.caat4wmm.ViolatingCycle;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
@@ -10,6 +11,8 @@ import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.wmm.axiom.Acyclic;
 import com.dat3m.dartagnan.wmm.relation.Relation;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.dat3m.dartagnan.wmm.utils.TupleSet;
+import com.google.common.collect.Sets;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.SolverContext;
@@ -17,6 +20,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 // A simple class that represents a graph with edges annotated by reasons from which the edge was derived
 // - The Graph is stored as a map from nodes (=events) to their incident edges
@@ -40,6 +44,8 @@ public class ReasonGraph {
 
     private Map<Event, Integer> hotEvents = new HashMap<>();
     private Map<Integer, Integer> cycleLength = new HashMap<>();
+    private Set<List<Tuple>> allPaths = new HashSet<>();
+    private Set<List<Tuple>> extrapolatedCycles = new HashSet<>();
 
     public ReasonGraph(Acyclic axiomToTrack, Refiner refiner) {
         this.axiom = axiomToTrack;
@@ -140,6 +146,45 @@ public class ReasonGraph {
         derivationToBeEncoded.clear();
         newCyclesToBeEncoded.clear();
         return enc;
+    }
+
+    public long extrapolateCyclesLengthFromTo(int from, int to) {
+        long startTime = System.currentTimeMillis();
+        for (Tuple start : reasonMap.keySet()) {
+            List<Tuple> startList = new ArrayList<>();
+            startList.add(start);
+            allPaths.add(startList);
+        }
+
+        boolean wasAdded = true;
+        while(wasAdded) {
+            wasAdded = false;
+            for (Event event : inEdges.keySet()) {
+                Set<List<Tuple>> addPaths = new HashSet<>();
+                allPaths.stream().filter(list -> list.size() < to && list.get(list.size() - 1).getSecond().equals(event)).forEach(list -> {
+                    for (Tuple tuple : outEdges.get(event)) {
+                        if (reasonMap.containsKey(new Tuple(tuple.getSecond(), list.get(list.size() -1).getFirst())) ||
+                                reasonMap.containsKey(new Tuple(list.get(list.size() -1).getFirst(), tuple.getSecond()))) {
+                            List<Tuple> copy = new ArrayList<>(list);
+                            copy.add(tuple);
+                            if (!allPaths.contains(copy)) {
+                                addPaths.add(copy);
+                            }
+                        }
+                    }
+                });
+                wasAdded = allPaths.addAll(addPaths);
+            }
+        }
+        int currentCycles = newCyclesToBeEncoded.size();
+        Set<List<Tuple>> addingCandidates = new HashSet<>();
+        allPaths.stream().filter(list -> list.size() >= from && list.size() <= to && list.get(0).getFirst().equals(list.get(list.size() - 1).getSecond()))
+                .forEach(addingCandidates::add);
+        newCyclesToBeEncoded.addAll(Sets.difference(addingCandidates, extrapolatedCycles));
+        extrapolatedCycles.addAll(addingCandidates);
+        System.out.println("Number of extrapolated paths: " + allPaths.size());
+        System.out.println("Number of added cycles: " + (newCyclesToBeEncoded.size() - currentCycles));
+        return System.currentTimeMillis() - startTime;
     }
 
     // ------------------------------------------
