@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.solver.caat.CAATSolver;
 import com.dat3m.dartagnan.solver.caat.reasoning.CAATLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreReasoner;
-import com.dat3m.dartagnan.solver.caat4wmm.statistics.GlobalStatistics;
 import com.dat3m.dartagnan.solver.caat4wmm.statistics.IntermediateStatistics;
 import com.dat3m.dartagnan.solver.caat4wmm.statistics.heuristics.*;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
@@ -74,8 +73,8 @@ public class WMMSolver {
         executionModel.initialize(model, ctx);
         executionGraph.initializeFromModel(executionModel);
         intermediateStats.initializeFromExecutionGraph(executionGraph);
-        if (GlobalStatistics.globalStats && initGlobalStats) {
-            GlobalStatistics.initialize(executionGraph);
+        if (IntermediateStatistics.use && initGlobalStats) {
+            //GlobalStatistics.initialize(executionGraph);
             initGlobalStats = false;
         }
         long extractTime = System.currentTimeMillis() - curTime;
@@ -98,10 +97,10 @@ public class WMMSolver {
             stats.numComputedCoreReasons = coreReasons.size();
             result.coreReasons = new DNF<>(coreReasons);
             result.hotEdges = intermediateStats.computeHotEdges(heuristic);
-            if (GlobalStatistics.globalStats) {
+            /*if (GlobalStatistics.globalStats) {
                 GlobalStatistics.insertCoreEdges(coreReasons);
                 GlobalStatistics.insertBaseEdges(baseReasons);
-            }
+            }*/
             stats.numComputedReducedCoreReasons = result.coreReasons.getNumberOfCubes();
             stats.statisticTime = intermediateStats.getDeltaTime() + heuristic.getDeltaTime();
             stats.coreReasonComputationTime = System.currentTimeMillis() - curTime;

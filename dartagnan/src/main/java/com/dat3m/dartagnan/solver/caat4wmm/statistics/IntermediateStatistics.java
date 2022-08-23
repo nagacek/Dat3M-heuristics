@@ -17,6 +17,11 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 public class IntermediateStatistics {
+
+    public static boolean use = true;
+    public static boolean showMemoized = true;
+    public static boolean showNotMemoized = false;
+    public static final int MAX_HOTNESS = 30;
     private final HotMap<List<Event>> edges;
     private final HotMap<List<Event>> edgesWOMemoized;
     private final HotMap<List<Event>> iterations;
@@ -191,7 +196,7 @@ public class IntermediateStatistics {
         };
 
         StringBuilder str = new StringBuilder();
-        if (GlobalStatistics.showNotMemoized) {
+        if (showNotMemoized) {
             str.append("\n\nHot intermediates:");
             str.append(edgesWOMemoized.toString(listString));
             str.append("\n\nHot events:");
@@ -204,7 +209,7 @@ public class IntermediateStatistics {
             str.append(edgesWOMemoized.per(iterationsWOMemoized, iterationCounter).toString(listString));
         }
 
-        if (GlobalStatistics.showMemoized) {
+        if (showMemoized) {
             str.append("\n\n\n ---------- Memoized edges taken into account ---------- \n");
             str.append("\n\nHot intermediates:").append(edges.toString(listString));
             str.append("\n\nHot events:");
@@ -226,7 +231,7 @@ public class IntermediateStatistics {
         StringBuilder str = new StringBuilder();
         ArrayList<Map.Entry<List<Event>, UpdatableValue<Float>>> sorted = new ArrayList<>(map.entrySet());
         sorted.sort((entry1, entry2) -> entry2.getValue().current().compareTo(entry1.getValue().current()));
-        for (int i = 0; i < Math.min(GlobalStatistics.MAX_HOTNESS, sorted.size()); i++) {
+        for (int i = 0; i < Math.min(MAX_HOTNESS, sorted.size()); i++) {
             Event e = sorted.get(i).getKey().get(0);
             str.append("\n").append(e.getCId()).append(" -> ").append(e).append(": ");
             float current = sorted.get(i).getValue().current();
@@ -242,7 +247,7 @@ public class IntermediateStatistics {
         StringBuilder str = new StringBuilder();
         ArrayList<Map.Entry<String, UpdatableValue<Float>>> sorted = new ArrayList<>(map.entrySet());
         sorted.sort((entry1, entry2) -> entry2.getValue().current().compareTo(entry1.getValue().current()));
-        for (int i = 0; i < Math.min(GlobalStatistics.MAX_HOTNESS, sorted.size()); i++) {
+        for (int i = 0; i < Math.min(MAX_HOTNESS, sorted.size()); i++) {
             float current = sorted.get(i).getValue().current();
             float difference = current - sorted.get(i).getValue().was();
             str.append("\n").append(sorted.get(i).getKey()).append(": ");
@@ -256,7 +261,7 @@ public class IntermediateStatistics {
         StringBuilder str = new StringBuilder();
         ArrayList<Map.Entry<String, Integer>> sorted = new ArrayList<>(map.entrySet());
         sorted.sort((entry1, entry2) -> entry2.getValue().compareTo(entry1.getValue()));
-        for (int i = 0; i < Math.min(GlobalStatistics.MAX_HOTNESS, sorted.size()); i++) {
+        for (int i = 0; i < Math.min(MAX_HOTNESS, sorted.size()); i++) {
             float current = sorted.get(i).getValue();
             str.append("\n").append(sorted.get(i).getKey()).append(": ");
             str.append((int)current);

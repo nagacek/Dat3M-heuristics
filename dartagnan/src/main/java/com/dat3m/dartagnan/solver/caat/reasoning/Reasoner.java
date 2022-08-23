@@ -12,7 +12,6 @@ import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.solver.caat.predicates.sets.Element;
 import com.dat3m.dartagnan.solver.caat.predicates.sets.SetPredicate;
 import com.dat3m.dartagnan.solver.caat4wmm.EdgeManager;
-import com.dat3m.dartagnan.solver.caat4wmm.statistics.GlobalStatistics;
 import com.dat3m.dartagnan.solver.caat4wmm.statistics.IntermediateStatistics;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
@@ -62,8 +61,8 @@ public class Reasoner {
             final Map<Edge, Conjunction<CAATLiteral>> reasonMap = new HashMap<>(mapSize);
 
             for (Collection<Edge> violation : (Collection<Collection<Edge>>)violations) {
-                if (GlobalStatistics.globalStats) {
-                    GlobalStatistics.newPredicate();
+                if (IntermediateStatistics.use) {
+                    //GlobalStatistics.newPredicate();
                     intermediateStats.addMemoizedReasons(violation);
                 }
                 Conjunction<CAATLiteral> reason = violation.stream()
@@ -73,9 +72,9 @@ public class Reasoner {
             }
         } else {
             for (Collection<? extends Derivable> violation : violations) {
-                if (GlobalStatistics.globalStats) {
+                /*if (GlobalStatistics.globalStats) {
                     GlobalStatistics.newPredicate();
-                }
+                }*/
                 Conjunction<CAATLiteral> reason = violation.stream()
                         .map(edge -> computeReason(pred, edge, null))
                         .reduce(Conjunction.TRUE(), Conjunction::and);
@@ -102,9 +101,9 @@ public class Reasoner {
             return Conjunction.FALSE();
         }
 
-        if (GlobalStatistics.globalStats) {
+        if (IntermediateStatistics.use) {
             //GlobalStatistics.insertIntermediate(graph.getName(), edge);
-            GlobalStatistics.go(graph.getName());
+            //GlobalStatistics.go(graph.getName());
             intermediateStats.insert(graph.getName(), edge, cameFrom);
         }
 
@@ -116,8 +115,8 @@ public class Reasoner {
         Conjunction<CAATLiteral> reason = graph.accept(graphVisitor, edge, cameFrom);
         assert !reason.isFalse();
 
-        if (GlobalStatistics.globalStats)
-            GlobalStatistics.goUp();
+        /*if (GlobalStatistics.globalStats)
+            GlobalStatistics.goUp();*/
 
         return reason;
     }
@@ -127,17 +126,17 @@ public class Reasoner {
             return Conjunction.FALSE();
         }
 
-        if (GlobalStatistics.globalStats) {
+        if (IntermediateStatistics.use) {
             //GlobalStatistics.insertIntermediate(set.getName(), ele);
-            GlobalStatistics.go(set.getName());
+            //GlobalStatistics.go(set.getName());
             intermediateStats.insert(set.getName(), ele, cameFrom);
         }
 
         Conjunction<CAATLiteral> reason = set.accept(setVisitor, ele, cameFrom);
         assert !reason.isFalse();
 
-        if (GlobalStatistics.globalStats)
-            GlobalStatistics.goUp();
+        /*if (GlobalStatistics.globalStats)
+            GlobalStatistics.goUp();*/
 
         return reason;
     }
@@ -157,8 +156,8 @@ public class Reasoner {
 
         @Override
         public Conjunction<CAATLiteral> visitGraphUnion(RelationGraph graph, Edge edge, Derivable cameFrom) {
-            if (GlobalStatistics.globalStats)
-                GlobalStatistics.operator("UNION");
+            /*if (GlobalStatistics.globalStats)
+                GlobalStatistics.operator("UNION");*/
 
             // We try to compute a shortest reason based on the distance to the base graphs
             Edge min = edge;
@@ -180,8 +179,8 @@ public class Reasoner {
 
         @Override
         public Conjunction<CAATLiteral> visitGraphIntersection(RelationGraph graph, Edge edge, Derivable cameFrom) {
-            if (GlobalStatistics.globalStats)
-                GlobalStatistics.operator("INTERSECT");
+            /*if (GlobalStatistics.globalStats)
+                GlobalStatistics.operator("INTERSECT");*/
 
             Conjunction<CAATLiteral> reason = Conjunction.TRUE();
             for (RelationGraph g : (List<RelationGraph>) graph.getDependencies()) {
@@ -194,8 +193,8 @@ public class Reasoner {
 
         @Override
         public Conjunction<CAATLiteral> visitGraphComposition(RelationGraph graph, Edge edge, Derivable cameFrom) {
-            if (GlobalStatistics.globalStats)
-                GlobalStatistics.operator("CONJUNCTION");
+            /*if (GlobalStatistics.globalStats)
+                GlobalStatistics.operator("CONJUNCTION");*/
 
             RelationGraph first = (RelationGraph) graph.getDependencies().get(0);
             RelationGraph second = (RelationGraph) graph.getDependencies().get(1);
@@ -233,8 +232,8 @@ public class Reasoner {
 
         @Override
         public Conjunction<CAATLiteral> visitCartesian(RelationGraph graph, Edge edge, Derivable cameFrom) {
-            if (GlobalStatistics.globalStats)
-                GlobalStatistics.operator("CARTESIAN");
+            /*if (GlobalStatistics.globalStats)
+                GlobalStatistics.operator("CARTESIAN");*/
 
             SetPredicate lhs = (SetPredicate) graph.getDependencies().get(0);
             SetPredicate rhs = (SetPredicate) graph.getDependencies().get(1);
@@ -264,8 +263,8 @@ public class Reasoner {
 
         @Override
         public Conjunction<CAATLiteral> visitInverse(RelationGraph graph, Edge edge, Derivable cameFrom) {
-            if (GlobalStatistics.globalStats)
-                GlobalStatistics.operator("INVERSE");
+            /*if (GlobalStatistics.globalStats)
+                GlobalStatistics.operator("INVERSE");*/
 
             Conjunction<CAATLiteral> reason = computeReason((RelationGraph) graph.getDependencies().get(0),
                     edge.inverse().withDerivationLength(edge.getDerivationLength() - 1), cameFrom);
@@ -277,8 +276,8 @@ public class Reasoner {
         public Conjunction<CAATLiteral> visitSetIdentity(RelationGraph graph, Edge edge, Derivable cameFrom) {
             assert edge.isLoop();
 
-            if (GlobalStatistics.globalStats)
-                GlobalStatistics.operator("IDENTITY");
+            /*if (GlobalStatistics.globalStats)
+                GlobalStatistics.operator("IDENTITY");*/
 
             SetPredicate inner = (SetPredicate) graph.getDependencies().get(0);
             Element e = inner.getById(edge.getFirst());
@@ -289,8 +288,8 @@ public class Reasoner {
         public Conjunction<CAATLiteral> visitRangeIdentity(RelationGraph graph, Edge edge, Derivable cameFrom) {
             assert edge.isLoop();
 
-            if (GlobalStatistics.globalStats)
-                GlobalStatistics.operator("RANGE IDENTITY");
+            /*if (GlobalStatistics.globalStats)
+                GlobalStatistics.operator("RANGE IDENTITY");*/
 
             RelationGraph inner = (RelationGraph) graph.getDependencies().get(0);
             for (Edge inEdge : inner.inEdges(edge.getSecond())) {
@@ -306,8 +305,8 @@ public class Reasoner {
 
         @Override
         public Conjunction<CAATLiteral> visitReflexiveClosure(RelationGraph graph, Edge edge, Derivable cameFrom) {
-            if (GlobalStatistics.globalStats)
-                GlobalStatistics.operator("REFLEXIVE CLOSURE");
+            /*if (GlobalStatistics.globalStats)
+                GlobalStatistics.operator("REFLEXIVE CLOSURE");*/
 
             if (edge.isLoop()) {
                 return Conjunction.TRUE();
@@ -320,8 +319,8 @@ public class Reasoner {
 
         @Override
         public Conjunction<CAATLiteral> visitTransitiveClosure(RelationGraph graph, Edge edge, Derivable cameFrom) {
-            if (GlobalStatistics.globalStats)
-                GlobalStatistics.operator("TRANSITIVE CLOSURE");
+            /*if (GlobalStatistics.globalStats)
+                GlobalStatistics.operator("TRANSITIVE CLOSURE");*/
 
             RelationGraph inner = (RelationGraph) graph.getDependencies().get(0);
             Conjunction<CAATLiteral> reason = Conjunction.TRUE();
@@ -335,8 +334,8 @@ public class Reasoner {
 
         @Override
         public Conjunction<CAATLiteral> visitRecursiveGraph(RelationGraph graph, Edge edge, Derivable cameFrom) {
-            if (GlobalStatistics.globalStats)
-                GlobalStatistics.operator("RECURSIVE");
+            /*if (GlobalStatistics.globalStats)
+                GlobalStatistics.operator("RECURSIVE");*/
 
             Conjunction<CAATLiteral> reason = computeReason((RelationGraph) graph.getDependencies().get(0), edge, cameFrom);
             assert !reason.isFalse();
@@ -355,8 +354,8 @@ public class Reasoner {
 
         @Override
         public Conjunction<CAATLiteral> visitSetUnion(SetPredicate set, Element ele, Derivable cameFrom) {
-            if (GlobalStatistics.globalStats)
-                GlobalStatistics.operator("UNION");
+            /*if (GlobalStatistics.globalStats)
+                GlobalStatistics.operator("UNION");*/
 
             // We try to compute a shortest reason based on the distance to the base graphs
             Element min = ele;
@@ -378,8 +377,8 @@ public class Reasoner {
 
         @Override
         public Conjunction<CAATLiteral> visitSetIntersection(SetPredicate set, Element ele, Derivable cameFrom) {
-            if (GlobalStatistics.globalStats)
-                GlobalStatistics.operator("INTERSECT");
+            /*if (GlobalStatistics.globalStats)
+                GlobalStatistics.operator("INTERSECT");*/
 
             Conjunction<CAATLiteral> reason = Conjunction.TRUE();
             for (SetPredicate s : set.getDependencies()) {
@@ -392,8 +391,8 @@ public class Reasoner {
 
         @Override
         public Conjunction<CAATLiteral> visitSetDifference(SetPredicate set, Element ele, Derivable cameFrom) {
-            if (GlobalStatistics.globalStats)
-                GlobalStatistics.operator("DIFFERENCE");
+            /*if (GlobalStatistics.globalStats)
+                GlobalStatistics.operator("DIFFERENCE");*/
 
             SetPredicate lhs = set.getDependencies().get(0);
             SetPredicate rhs = set.getDependencies().get(1);

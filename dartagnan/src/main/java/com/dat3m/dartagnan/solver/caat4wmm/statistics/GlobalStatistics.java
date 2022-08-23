@@ -21,7 +21,7 @@ import scala.Int;
 
 import java.util.*;
 import java.util.function.Function;
-
+//Obsolete and ugly
 public class GlobalStatistics {
 
     public static final boolean globalStats = true;
