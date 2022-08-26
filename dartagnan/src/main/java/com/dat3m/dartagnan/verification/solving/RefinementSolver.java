@@ -92,7 +92,7 @@ public class RefinementSolver {
 
         for (Relation rel : task.getRelationDependencyGraph().getNodeContents()) {
             rel.initializeEncoding(ctx);
-            //rel.getWeight();
+            rel.getWeight();
         }
 
         for (Axiom axiom : task.getMemoryModel().getAxioms()) {
