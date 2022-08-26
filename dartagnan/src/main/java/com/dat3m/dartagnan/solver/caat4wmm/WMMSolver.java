@@ -52,7 +52,7 @@ public class WMMSolver {
         this.reasoner = new CoreReasoner(task, executionGraph, manager);
         this.solver = CAATSolver.create(stats, manager);
         this.intermediateStats = stats;
-        this.heuristic = new FROnly(task, 5, 3);
+        this.heuristic = new WeightedRelations(task, 5, 10);
     }
 
     public ExecutionModel getExecution() {
