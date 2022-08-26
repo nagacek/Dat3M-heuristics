@@ -46,8 +46,8 @@ public class WeightedRelations extends EagerEncodingHeuristic {
         int bound = strength;
         for (int i = 0; i < bound && i < sorted.size(); i++) {
             var value = sorted.get(i);
-            if (!isBase(value.getKey()) && value.getValue().getKey().size() == 2 && !(getRelationByName(value.getKey()) instanceof RelTransRef)){
-                    //&& !getRelationByName(value.getKey()).getEncodeTupleSet().contains(new Tuple(value.getValue().getKey().get(0), value.getValue().getKey().get(1)))) {
+            if (!isBase(value.getKey()) && value.getValue().getKey().size() == 2 && !(getRelationByName(value.getKey()) instanceof RelTransRef)//){
+                    && !getRelationByName(value.getKey()).getEncodeTupleSet().contains(new Tuple(value.getValue().getKey().get(0), value.getValue().getKey().get(1)))) {
                 chosenEdges.merge(new TupleSetMap(value.getKey(), new TupleSet(Arrays.asList(new Tuple(value.getValue().getKey().get(0), value.getValue().getKey().get(1))))));
             } else {
                 bound++;
