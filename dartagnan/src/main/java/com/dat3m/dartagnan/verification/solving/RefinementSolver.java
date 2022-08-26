@@ -168,7 +168,7 @@ public class RefinementSolver {
                             totalNewCyclesFound++;
                         }
                     }
-                    logger.info("Extrapolation time: {}ms", g.extrapolateCyclesLengthFromTo(3,4));
+                    //logger.info("Extrapolation time: {}ms", g.extrapolateCyclesLengthFromTo(3,4));
                     prover.addConstraint(g.encodeChanges(ctx));
                 }
 
