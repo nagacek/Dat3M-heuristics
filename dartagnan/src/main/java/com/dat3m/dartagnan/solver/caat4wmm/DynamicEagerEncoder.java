@@ -30,11 +30,11 @@ public class DynamicEagerEncoder {
         for (var entry : toEncode.getEntries()) {
             Relation rel = getRelationFromName(rels.getNodeContents(), entry.getKey());
             System.out.println("Encode Approx for " + rel.getName());
-            if (rel.getName().equals("propbase")) {
+            /*if (rel.getName().equals("propbase")) {
                 int temp = 0;
             }
+            System.out.println("Done.\n");*/
             eagerEncoding = manager.and(eagerEncoding, rel.encodeApprox(ctx, entry.getValue()));
-            System.out.println("Done.\n");
         }
         return eagerEncoding;
     }
