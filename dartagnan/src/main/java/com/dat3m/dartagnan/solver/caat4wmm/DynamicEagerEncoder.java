@@ -34,7 +34,7 @@ public class DynamicEagerEncoder {
                 int temp = 0;
             }*/
             eagerEncoding = manager.and(eagerEncoding, rel.encodeApprox(ctx, entry.getValue()));
-            System.out.println("Done.\n");
+            //System.out.println("Done.\n");
         }
         return eagerEncoding;
     }
