@@ -38,7 +38,7 @@ public class ReasonGraph {
     // which cycles are not need encoded and which newly found reasons for edges
     // are not yet encoded (if encoding of cycles/derivations should take place).
     private Set<List<Tuple>> encounteredCycles = new HashSet<>();
-    private Set<List<Tuple>> notNewCycles = new HashSet<>();
+    //private Set<List<Tuple>> notNewCycles = new HashSet<>();
     private List<List<Tuple>> newCyclesToBeEncoded = new ArrayList<>();
     private Map<Tuple, Set<Conjunction<CoreLiteral>>> derivationToBeEncoded = new HashMap<>();
 
@@ -109,7 +109,7 @@ public class ReasonGraph {
             }
         }
         if (!changes) {
-            notNewCycles.add(cycle);
+            //notNewCycles.add(cycle);
             for (Tuple edge : cycle) {
                 Integer current = hotEvents.putIfAbsent(edge.getFirst(), 1);
                 if (current != null) {
@@ -247,7 +247,10 @@ public class ReasonGraph {
         return bmgr.not(refiner.refine(enc, ctx));
     }
 
+    /*
+    // Test code that shows what cycles were possible to extrapolate that were then seen
     public String showNotNew() {
+
         String cycleString = "";
         for (List<Tuple> cycle : notNewCycles) {
             for (Tuple edge : cycle) {
@@ -257,11 +260,11 @@ public class ReasonGraph {
             /*for (Tuple edge : cycle) {
                 cycleString += edge.toString() + " -> ";
             }
-            cycleString += "}\n";*/
+            cycleString += "}\n";
 
         }
         return cycleString;
-    }
+    }*/
 
     public String showCycleLengthHotness() {
         StringBuilder returnString = new StringBuilder();

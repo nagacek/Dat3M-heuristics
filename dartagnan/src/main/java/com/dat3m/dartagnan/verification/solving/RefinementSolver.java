@@ -168,12 +168,12 @@ public class RefinementSolver {
                             totalNewCyclesFound++;
                         }
                     }
-                    //logger.info("Extrapolation time: {}ms", g.extrapolateCyclesLengthFromTo(3,4));
+                    logger.info("Extrapolation time: {}ms", g.extrapolateCyclesLengthFromTo(3,4));
                     prover.addConstraint(g.encodeChanges(ctx));
                 }
 
                 // Some other test code...
-                /*for (Axiom ax : solverResult.getCycleEdgeReasons().keySet()) {
+                for (Axiom ax : solverResult.getCycleEdgeReasons().keySet()) {
                     ReasonGraph g = reasonGraphList.stream().filter(graph -> graph.getAxiom() == ax).findFirst().get();
                     for (Map.Entry<Tuple, Conjunction<CoreLiteral>> entry : solverResult.getCycleEdgeReasons().get(ax).entrySet()) {
                         totalEdgeReasonsFound++;
@@ -181,7 +181,8 @@ public class RefinementSolver {
                             nonduplicatedReasonsFound++;
                         }
                     }
-                    if (iterationCount % 10 == 0) {
+                }
+                    /*if (iterationCount % 10 == 0) {
                         // Some statistics stuff
                         //logger.info("Extrapolating reasons.");
                         //prover.addConstraint(g.encodeShortestCycles(ctx));
@@ -223,11 +224,11 @@ public class RefinementSolver {
         curTime = System.currentTimeMillis();
         totalNativeSolvingTime += (curTime - lastTime);
 
-        for (ReasonGraph graph : reasonGraphList) {
+        /*for (ReasonGraph graph : reasonGraphList) {
             logger.info("Cycles that could have been extrapolated beforehand {}\n{}", graph.getAxiom().getName(), graph.showNotNew());
             logger.info("Cycles that could have been extrapolated beforehand {} (lengths)\n{}", graph.getAxiom().getName(), graph.showCycleLengthHotness());
             logger.info("Cycles that could have been extrapolated beforehand {} (hot events)\n{}", graph.getAxiom().getName(), graph.showEventHotness());
-        }
+        }*/
 
         logger.debug("Final solver iteration:\n" +
                         " ===== Final Iteration: {} =====\n" +
