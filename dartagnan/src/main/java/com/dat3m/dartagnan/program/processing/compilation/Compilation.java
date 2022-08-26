@@ -39,7 +39,7 @@ public class Compilation implements ProgramProcessor {
     @Option(name = PRINT_PROGRAM_AFTER_COMPILATION,
             description = "Prints the program after compilation.",
             secure = true)
-    private boolean print = true;
+    private boolean print = false;
 
     // =====================================================================
 
