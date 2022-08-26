@@ -72,7 +72,7 @@ public class IntermediateStatistics {
         //edgesWOMemoized.update();
         //iterations.update();
         //iterationsWOMemoized.update();
-        //metric = edges.per(iterations, iterationCounter);
+        metric = edges.per(iterations, iterationCounter);
         if (relearn != 0 && iterationCounter % relearn == 0) {
             edges.clear();
             //edgesWOMemoized.clear();
