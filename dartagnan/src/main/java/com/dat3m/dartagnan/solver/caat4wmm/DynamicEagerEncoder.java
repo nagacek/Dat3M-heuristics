@@ -29,10 +29,10 @@ public class DynamicEagerEncoder {
         BooleanFormula eagerEncoding = manager.makeTrue();
         for (var entry : toEncode.getEntries()) {
             Relation rel = getRelationFromName(rels.getNodeContents(), entry.getKey());
-            System.out.println("Encode Approx for " + rel.getName());
+            /*System.out.println("Encode Approx for " + rel.getName());
             if (rel.getName().equals("propbase")) {
                 int temp = 0;
-            }
+            }*/
             eagerEncoding = manager.and(eagerEncoding, rel.encodeApprox(ctx, entry.getValue()));
             System.out.println("Done.\n");
         }
