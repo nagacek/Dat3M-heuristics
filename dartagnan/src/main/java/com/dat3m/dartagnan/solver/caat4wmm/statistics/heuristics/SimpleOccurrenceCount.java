@@ -29,13 +29,16 @@ public class SimpleOccurrenceCount extends EagerEncodingHeuristic {
         //float average = edges.getAverage(s -> !isBase(s));
         //entry.getValue().current() >= average * strength &&
         //HashMap<String, Set<List<Event>>> chosen = edges.getAll(s -> !isBase(s), entry ->  entry.getKey().size() == 2 && strength - number.getAndDecrement() > 0);
-
+        int bound = (int)strength;
         var sorted = edges.sort();
         TupleSetMap chosenEdges = new TupleSetMap();
-        for (int i = 0; i < strength && i < sorted.size(); i++) {
+        for (int i = 0; i < bound && i < sorted.size(); i++) {
             var value = sorted.get(i);
             if (!isBase(value.getKey()) && value.getValue().getKey().size() == 2) {
+                //&& !getRelationByName(value.getKey()).getEncodeTupleSet().contains(new Tuple(value.getValue().getKey().get(0), value.getValue().getKey().get(1)))) {
                 chosenEdges.merge(new TupleSetMap(value.getKey(), new TupleSet(Arrays.asList(new Tuple(value.getValue().getKey().get(0), value.getValue().getKey().get(1))))));
+            } else {
+                bound++;
             }
         }
         return chosenEdges;

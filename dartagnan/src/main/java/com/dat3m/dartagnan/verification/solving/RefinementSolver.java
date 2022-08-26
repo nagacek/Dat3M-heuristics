@@ -192,7 +192,7 @@ public class RefinementSolver {
                         message.append("\n").append(cube);
                     }
                     message.append("\n");
-                    //logger.trace(message);
+                    logger.trace(message);
 
                     // Statistics in global environment
                     if (IntermediateStatistics.use) {
@@ -203,7 +203,7 @@ public class RefinementSolver {
                         intermediateStatistics.update();
                         message.append("\n\n\n\n\nChose edge\n").append(solverResult.getHotEdges());
                         message.append("\n\nAffected edges\n").append(encodedEdges);
-                        //logger.trace(message);
+                        logger.trace(message);
                     }
                 }
                 if (IntermediateStatistics.use) {
