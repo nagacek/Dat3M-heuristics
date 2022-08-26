@@ -182,8 +182,8 @@ public class ReasonGraph {
                 .forEach(addingCandidates::add);
         newCyclesToBeEncoded.addAll(Sets.difference(addingCandidates, extrapolatedCycles));
         extrapolatedCycles.addAll(addingCandidates);
-        System.out.println("Number of extrapolated paths: " + allPaths.size());
-        System.out.println("Number of added cycles: " + (newCyclesToBeEncoded.size() - currentCycles));
+        //System.out.println("Number of extrapolated paths: " + allPaths.size());
+        //System.out.println("Number of added cycles: " + (newCyclesToBeEncoded.size() - currentCycles));
         return System.currentTimeMillis() - startTime;
     }
 

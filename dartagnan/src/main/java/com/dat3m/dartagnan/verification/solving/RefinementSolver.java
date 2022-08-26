@@ -169,6 +169,7 @@ public class RefinementSolver {
                         }
                     }
                     //logger.info("Extrapolation time: {}ms", g.extrapolateCyclesLengthFromTo(3,4));
+                    g.extrapolateCyclesLengthFromTo(3,4);
                     prover.addConstraint(g.encodeChanges(ctx));
                 }
 
