@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 public class HotMap <T>{
     private HashMap<String, HashMap<T, UpdatableValue<Float>>> map;
 
-    private static final int MAX_HOTNESS = GlobalStatistics.MAX_HOTNESS;
+    private static final int MAX_HOTNESS = IntermediateStatistics.MAX_HOTNESS;
 
     public HotMap() {
         map = new HashMap<>();

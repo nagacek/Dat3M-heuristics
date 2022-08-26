@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.solver.caat4wmm.DynamicEagerEncoder;
-import com.dat3m.dartagnan.solver.caat4wmm.statistics.GlobalStatistics;
+//import com.dat3m.dartagnan.solver.caat4wmm.statistics.GlobalStatistics;
 import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
 import com.dat3m.dartagnan.solver.caat4wmm.WMMSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
@@ -186,16 +186,19 @@ public class RefinementSolver {
                     logger.trace(message);
 
                     // Statistics in global environment
-                    if (GlobalStatistics.globalStats) {
-                        message = new StringBuilder().append("Hot edges in global view:");
+                    if (IntermediateStatistics.use) {
+                        /*message = new StringBuilder().append("Hot edges in global view:");
                         message.append(GlobalStatistics.print());
                         message.append(intermediateStatistics);
-                        GlobalStatistics.newIteration();
-                        intermediateStatistics.update();
+                        GlobalStatistics.newIteration();*/
+                        //intermediateStatistics.update();
                         message.append("\n\n\n\n\nChose edge").append(solverResult.getHotEdges());
                         message.append("\n\nAffected edges\n").append(encodedEdges);
                         logger.trace(message);
                     }
+                }
+                if (IntermediateStatistics.use) {
+                    intermediateStatistics.update();
                 }
             } else {
                 // No violations found, we can't refine
