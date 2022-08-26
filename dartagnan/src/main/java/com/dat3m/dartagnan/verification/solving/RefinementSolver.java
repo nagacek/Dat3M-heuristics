@@ -192,18 +192,17 @@ public class RefinementSolver {
                         message.append("\n").append(cube);
                     }
                     message.append("\n");
-                    //logger.trace(message);
+                    logger.trace(message);
 
                     // Statistics in global environment
                     if (IntermediateStatistics.use) {
-                        //message = new StringBuilder().append("Hot edges in global view:");
-                        //message.append(GlobalStatistics.print());
-                        //message.append(intermediateStatistics);
+                        /*message = new StringBuilder().append("Hot edges in global view:");
+                        message.append(GlobalStatistics.print());
+                        message.append(intermediateStatistics);*/
                         //GlobalStatistics.newIteration();
-                        intermediateStatistics.update();
                         message.append("\n\n\n\n\nChose edge\n").append(solverResult.getHotEdges());
                         message.append("\n\nAffected edges\n").append(encodedEdges);
-                        //logger.trace(message);
+                        logger.trace(message);
                     }
                 }
                 if (IntermediateStatistics.use) {
