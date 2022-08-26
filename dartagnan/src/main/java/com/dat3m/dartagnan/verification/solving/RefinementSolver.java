@@ -206,6 +206,9 @@ public class RefinementSolver {
                         logger.trace(message);
                     }
                 }
+                if (IntermediateStatistics.use) {
+                    intermediateStatistics.update();
+                }
             } else {
                 // No inconsistencies found, we can't refine
                 break;
