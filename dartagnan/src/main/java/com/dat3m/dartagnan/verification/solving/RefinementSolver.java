@@ -180,7 +180,7 @@ public class RefinementSolver {
                             nonduplicatedReasonsFound++;
                         }
                     }
-                    if (iterationCount % 10 == 0) {
+                    /*if (iterationCount % 10 == 0) {
                         // Some statistics stuff
                         //logger.info("Extrapolating reasons.");
                         //prover.addConstraint(g.encodeShortestCycles(ctx));
@@ -193,7 +193,7 @@ public class RefinementSolver {
                                     .append(pair.getValue()).append("\n");
                         });
                         logger.info("Hotness status:\n" + report);
-                    }
+                    }*/
 
 
                     // Encode the whole reason graph via acyclicity constraints using IDL
