@@ -33,8 +33,8 @@ public class DynamicEagerEncoder {
             if (rel.getName().equals("propbase")) {
                 int temp = 0;
             }
-            eagerEncoding = manager.and(eagerEncoding, rel.encodeApprox(ctx, entry.getValue()));
             System.out.println("Done.\n");*/
+            eagerEncoding = manager.and(eagerEncoding, rel.encodeApprox(ctx, entry.getValue()));
         }
         return eagerEncoding;
     }
