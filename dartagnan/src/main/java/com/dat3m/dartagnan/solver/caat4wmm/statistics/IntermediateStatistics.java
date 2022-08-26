@@ -70,13 +70,13 @@ public class IntermediateStatistics {
         long startTime = System.currentTimeMillis();
         edges.update();
         //edgesWOMemoized.update();
-        //iterations.update();
+        iterations.update();
         //iterationsWOMemoized.update();
         metric = edges.per(iterations, iterationCounter);
         if (relearn != 0 && iterationCounter % relearn == 0) {
             edges.clear();
             //edgesWOMemoized.clear();
-            //iterations.clear();
+            iterations.clear();
             //iterationsWOMemoized.clear();
             iterationCounter = 0;
         }
@@ -99,7 +99,7 @@ public class IntermediateStatistics {
             List<Event> edge = Arrays.asList(e1, e2);
             edges.insertAndCount(name, edge);
             //edgesWOMemoized.insertAndCount(name, edge);
-            //iterations.insertAndCount(name, edge, true);
+            iterations.insertAndCount(name, edge, true);
             //iterationsWOMemoized.insertAndCount(name, edge, true);
 
             saveForLater(name, edge, cameFrom);
@@ -111,7 +111,7 @@ public class IntermediateStatistics {
             List<Event> event = Collections.singletonList(e1);
             edges.insertAndCount(name, event);
             //edgesWOMemoized.insertAndCount(name, event);
-            //iterations.insertAndCount(name, event, true);
+            iterations.insertAndCount(name, event, true);
             //iterationsWOMemoized.insertAndCount(name, event, true);
 
             saveForLater(name, event, cameFrom);
@@ -126,7 +126,7 @@ public class IntermediateStatistics {
             if (computedRelations.containsKey(edge)) {
                 for (ReasonElement el : computedRelations.get(edge)) {
                     edges.insertAndCount(el.getName(), el.getEvents());
-                    //iterations.insertAndCount(el.getName(), el.getEvents(), true);
+                    iterations.insertAndCount(el.getName(), el.getEvents(), true);
                 }
             }
         }
