@@ -131,6 +131,7 @@ public class RefinementSolver {
         long totalCaatTime = 0;
         long totalRefiningTime = 0;
         long statisticTime = 0;
+        long eagerlyEncoded = 0;
         solver.initializeGlobalStats();
         //  ---------------------------------
 
@@ -174,6 +175,7 @@ public class RefinementSolver {
                 DNF<CoreLiteral> reasons = solverResult.getCoreReasons();
                 BooleanFormula refinement = refiner.refine(reasons, ctx);
                 TupleSetMap encodedEdges = DynamicEagerEncoder.determineEncodedTuples(solverResult.getHotEdges(), rels);
+                eagerlyEncoded += encodedEdges.getCount();
                 BooleanFormula eagerly = DynamicEagerEncoder.encodeEagerly(encodedEdges, rels, ctx);
                 allEagerEdges = bmgr.and(allEagerEdges, eagerly);
                 refinement = bmgr.and(refinement, eagerly);
@@ -278,6 +280,7 @@ public class RefinementSolver {
     			smtStatistics.append(String.format("\t%s -> %s\n", key, prover.getStatistics().get(key)));
     		}
     		logger.debug(smtStatistics.toString());
+            logger.debug("Overall number of eagerly encoded edges: " + eagerlyEncoded);
         }
 
         veriResult = program.getAss().getInvert() ? veriResult.invert() : veriResult;

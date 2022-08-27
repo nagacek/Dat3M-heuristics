@@ -54,6 +54,14 @@ public class TupleSetMap {
 
     public Set<Map.Entry<String, TupleSet>> getEntries() { return map.entrySet(); }
 
+    public long getCount() {
+        long count = 0;
+        for (var entry : map.values()) {
+            count += entry.size();
+        }
+        return count;
+    }
+
     @Override
     public String toString() {
         StringBuilder str = new StringBuilder();
