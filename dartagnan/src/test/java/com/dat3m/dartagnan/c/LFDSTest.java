@@ -33,7 +33,7 @@ public class LFDSTest extends AbstractCTest {
 
     @Override
     protected long getTimeout() {
-        return 600000;
+        return 180000;
     }
 
     protected Provider<Integer> getBoundProvider() {
@@ -43,31 +43,31 @@ public class LFDSTest extends AbstractCTest {
 	@Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
 		return Arrays.asList(new Object[][]{
-            {"dglm-3", TSO, UNKNOWN},
-            {"dglm-3", ARM8, UNKNOWN},
+            //{"dglm-3", TSO, UNKNOWN},
+            //{"dglm-3", ARM8, UNKNOWN},
             {"dglm-3", POWER, UNKNOWN},
-            {"dglm-3-CAS-relaxed", TSO, UNKNOWN},
-            {"dglm-3-CAS-relaxed", ARM8, FAIL},
+            //{"dglm-3-CAS-relaxed", TSO, UNKNOWN},
+            //{"dglm-3-CAS-relaxed", ARM8, FAIL},
             {"dglm-3-CAS-relaxed", POWER, FAIL},
-            {"ms-3", TSO, UNKNOWN},
-            {"ms-3", ARM8, UNKNOWN},
+            //{"ms-3", TSO, UNKNOWN},
+            //{"ms-3", ARM8, UNKNOWN},
             {"ms-3", POWER, UNKNOWN},
-            {"ms-3-CAS-relaxed", TSO, UNKNOWN},
-            {"ms-3-CAS-relaxed", ARM8, FAIL},
+            //{"ms-3-CAS-relaxed", TSO, UNKNOWN},
+            //{"ms-3-CAS-relaxed", ARM8, FAIL},
             {"ms-3-CAS-relaxed", POWER, FAIL},
-            {"treiber-3", TSO, UNKNOWN},
-            {"treiber-3", ARM8, UNKNOWN},
+            //{"treiber-3", TSO, UNKNOWN},
+            //{"treiber-3", ARM8, UNKNOWN},
             {"treiber-3", POWER, UNKNOWN},
-            {"treiber-3-CAS-relaxed", TSO, UNKNOWN},
-            {"treiber-3-CAS-relaxed", ARM8, FAIL},
+            //{"treiber-3-CAS-relaxed", TSO, UNKNOWN},
+            //{"treiber-3-CAS-relaxed", ARM8, FAIL},
             {"treiber-3-CAS-relaxed", POWER, FAIL},
-            {"chase-lev-5", TSO, PASS},
-            {"chase-lev-5", ARM8, PASS},
+            //{"chase-lev-5", TSO, PASS},
+            //{"chase-lev-5", ARM8, PASS},
             {"chase-lev-5", POWER, PASS},
             // These ones have an extra thief that violate the assertion
-            {"chase-lev-6", TSO, FAIL},
-            {"chase-lev-6", ARM8, FAIL},
-            {"chase-lev-6", POWER, FAIL},
+            //{"chase-lev-6", TSO, FAIL},
+            //{"chase-lev-6", ARM8, FAIL},
+            //{"chase-lev-6", POWER, FAIL},
         });
     }
 
