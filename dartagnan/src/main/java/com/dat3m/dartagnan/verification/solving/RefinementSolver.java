@@ -283,6 +283,7 @@ public class RefinementSolver {
             logger.debug("Overall number of eagerly encoded edges: " + eagerlyEncoded);
         }
 
+        logger.info("Overall number of eagerly encoded edges: " + eagerlyEncoded);
         veriResult = program.getAss().getInvert() ? veriResult.invert() : veriResult;
         logger.info("Verification finished with result " + veriResult);
         return veriResult;
