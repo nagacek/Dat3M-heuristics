@@ -131,6 +131,7 @@ public class RefinementSolver {
         long totalCaatTime = 0;
         long totalRefiningTime = 0;
         long statisticTime = 0;
+        long eagerlyEncoded = 0;
         solver.initializeGlobalStats();
         //  ---------------------------------
 
@@ -278,6 +279,8 @@ public class RefinementSolver {
     		}
     		logger.debug(smtStatistics.toString());
         }
+
+        logger.info("Number of eagerly encoded edges: " + eagerlyEncoded);
 
         veriResult = program.getAss().getInvert() ? veriResult.invert() : veriResult;
         logger.info("Verification finished with result " + veriResult);
