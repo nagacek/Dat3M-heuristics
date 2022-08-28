@@ -67,4 +67,11 @@ public class TupleSetMap {
         return map;
     }
 
+    public long getCount() {
+        long returnValue = 0;
+        for (var entry : map.values()) {
+            returnValue += entry.size();
+        }
+        return returnValue;
+    }
 }

@@ -175,6 +175,7 @@ public class RefinementSolver {
                 DNF<CoreLiteral> reasons = solverResult.getCoreReasons();
                 BooleanFormula refinement = refiner.refine(reasons, ctx);
                 TupleSetMap encodedEdges = DynamicEagerEncoder.determineEncodedTuples(solverResult.getHotEdges(), rels);
+                eagerlyEncoded += encodedEdges.getCount();
                 BooleanFormula eagerly = DynamicEagerEncoder.encodeEagerly(encodedEdges, rels, ctx);
                 allEagerEdges = bmgr.and(allEagerEdges, eagerly);
                 refinement = bmgr.and(refinement, eagerly);
